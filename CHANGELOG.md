@@ -2,7 +2,29 @@
 
 ## 1.0.0-beta.1
 
-Extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts) monorepo, where this library was published as `@bcts/crypto`. The public API is unchanged; see [MIGRATION.md](./MIGRATION.md).
+Extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts)
+monorepo (`@bcts/crypto`) and redesigned as an idiomatic TypeScript library;
+see [MIGRATION.md](./MIGRATION.md). Every output byte is unchanged.
+
+- Algorithm families are objects: `chacha20Poly1305`, `x25519`, `ecdsa`,
+  `schnorr`, `ed25519`, each with its size constants. Hashes, MACs and KDFs
+  stay as root functions; the `hash` namespace is gone.
+- AEAD `encrypt` returns `ciphertext || tag` as one `Uint8Array`; `decrypt`
+  takes the same. `{ aad }` replaces the `WithAad` twins.
+- `ed25519.verify(publicKey, signature, message)`: argument order unified
+  with the other schemes.
+- Options objects replace positional parameters and `*Opt`/`*Using`
+  variants: `{ rng }`, `{ auxRand }`, `{ iterations, dkLen }`,
+  `{ dkLen, logN, r, p }`, `{ dkLen, t, m, p }`, `{ littleEndian }`.
+- One `CryptoError` with `code: "InvalidSize" | "InvalidData" |
+  "AuthenticationFailed" | "Unsupported"`, typed `details`, and factories;
+  `AeadError` and `CryptoResult` removed. Wrong-length inputs throw
+  `CryptoError` instead of a bare `Error`.
+- `crc32` runs 2.2× faster; everything else is within noise of the
+  pre-redesign bundle (`bench/benchmark.mjs`).
+- 511 golden vectors, a differential corpus against the frozen pre-redesign
+  bundle, and a Rust cross-validation harness (`tests/rust-validation`,
+  `bc-crypto 0.14.0`: 511/511 match).
 
 ---
 

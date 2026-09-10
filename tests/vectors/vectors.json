@@ -7794,7 +7794,7 @@
      "start": 0
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -7804,7 +7804,7 @@
      "start": 0
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -7814,7 +7814,7 @@
      "start": 0
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -7828,7 +7828,7 @@
      "start": 0
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:CryptoError"
   }
  ]
 }

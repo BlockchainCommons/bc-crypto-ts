@@ -1,6 +1,22 @@
 import { RandomNumberGenerator } from "@blockchaincommons/rand";
 declare namespace hash_d_exports {
-  export { CRC32_SIZE, SHA256_SIZE, SHA512_SIZE, crc32, crc32Data, crc32DataOpt, doubleSha256, hkdfHmacSha256, hkdfHmacSha512, hmacSha256, hmacSha512, pbkdf2HmacSha256, pbkdf2HmacSha512, sha256, sha512 };
+  export {
+    CRC32_SIZE,
+    SHA256_SIZE,
+    SHA512_SIZE,
+    crc32,
+    crc32Data,
+    crc32DataOpt,
+    doubleSha256,
+    hkdfHmacSha256,
+    hkdfHmacSha512,
+    hmacSha256,
+    hmacSha512,
+    pbkdf2HmacSha256,
+    pbkdf2HmacSha512,
+    sha256,
+    sha512,
+  };
 }
 declare const CRC32_SIZE = 4;
 declare const SHA256_SIZE = 32;
@@ -43,19 +59,37 @@ declare function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array;
 /**
  * Derive a key using PBKDF2 with HMAC-SHA-256
  */
-declare function pbkdf2HmacSha256(password: Uint8Array, salt: Uint8Array, iterations: number, keyLen: number): Uint8Array;
+declare function pbkdf2HmacSha256(
+  password: Uint8Array,
+  salt: Uint8Array,
+  iterations: number,
+  keyLen: number,
+): Uint8Array;
 /**
  * Derive a key using PBKDF2 with HMAC-SHA-512
  */
-declare function pbkdf2HmacSha512(password: Uint8Array, salt: Uint8Array, iterations: number, keyLen: number): Uint8Array;
+declare function pbkdf2HmacSha512(
+  password: Uint8Array,
+  salt: Uint8Array,
+  iterations: number,
+  keyLen: number,
+): Uint8Array;
 /**
  * Derive a key using HKDF with HMAC-SHA-256
  */
-declare function hkdfHmacSha256(keyMaterial: Uint8Array, salt: Uint8Array, keyLen: number): Uint8Array;
+declare function hkdfHmacSha256(
+  keyMaterial: Uint8Array,
+  salt: Uint8Array,
+  keyLen: number,
+): Uint8Array;
 /**
  * Derive a key using HKDF with HMAC-SHA-512
  */
-declare function hkdfHmacSha512(keyMaterial: Uint8Array, salt: Uint8Array, keyLen: number): Uint8Array;
+declare function hkdfHmacSha512(
+  keyMaterial: Uint8Array,
+  salt: Uint8Array,
+  keyLen: number,
+): Uint8Array;
 //#endregion
 //#region src/error.d.ts
 /**
@@ -114,7 +148,16 @@ type CryptoResult<T> = T;
  * Any of the integer-/float-valued typed arrays that JavaScript exposes.
  * Maps to Rust's `&mut [T]` parameter on `bc_crypto::memzero<T>`.
  */
-type NumericTypedArray = Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array;
+type NumericTypedArray =
+  | Uint8Array
+  | Uint8ClampedArray
+  | Uint16Array
+  | Uint32Array
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array;
 /**
  * Securely zero out a typed array.
  *
@@ -159,7 +202,11 @@ declare const SYMMETRIC_AUTH_SIZE = 16;
  * @returns Tuple of [ciphertext, authTag] where authTag is 16 bytes
  * @throws {CryptoError} If key is not 32 bytes or nonce is not 12 bytes
  */
-declare function aeadChaCha20Poly1305Encrypt(plaintext: Uint8Array, key: Uint8Array, nonce: Uint8Array): [Uint8Array, Uint8Array];
+declare function aeadChaCha20Poly1305Encrypt(
+  plaintext: Uint8Array,
+  key: Uint8Array,
+  nonce: Uint8Array,
+): [Uint8Array, Uint8Array];
 /**
  * Encrypt data using ChaCha20-Poly1305 AEAD cipher with additional authenticated data.
  *
@@ -174,7 +221,12 @@ declare function aeadChaCha20Poly1305Encrypt(plaintext: Uint8Array, key: Uint8Ar
  * @returns Tuple of [ciphertext, authTag] where authTag is 16 bytes
  * @throws {CryptoError} If key is not 32 bytes or nonce is not 12 bytes
  */
-declare function aeadChaCha20Poly1305EncryptWithAad(plaintext: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad: Uint8Array): [Uint8Array, Uint8Array];
+declare function aeadChaCha20Poly1305EncryptWithAad(
+  plaintext: Uint8Array,
+  key: Uint8Array,
+  nonce: Uint8Array,
+  aad: Uint8Array,
+): [Uint8Array, Uint8Array];
 /**
  * Decrypt data using ChaCha20-Poly1305 AEAD cipher.
  *
@@ -186,7 +238,12 @@ declare function aeadChaCha20Poly1305EncryptWithAad(plaintext: Uint8Array, key: 
  * @throws {CryptoError} If key/nonce/authTag sizes are invalid
  * @throws {CryptoError} If authentication fails (tampered data or wrong key/nonce)
  */
-declare function aeadChaCha20Poly1305Decrypt(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array, authTag: Uint8Array): Uint8Array;
+declare function aeadChaCha20Poly1305Decrypt(
+  ciphertext: Uint8Array,
+  key: Uint8Array,
+  nonce: Uint8Array,
+  authTag: Uint8Array,
+): Uint8Array;
 /**
  * Decrypt data using ChaCha20-Poly1305 AEAD cipher with additional authenticated data.
  *
@@ -199,7 +256,13 @@ declare function aeadChaCha20Poly1305Decrypt(ciphertext: Uint8Array, key: Uint8A
  * @throws {CryptoError} If key/nonce/authTag sizes are invalid
  * @throws {CryptoError} If authentication fails (tampered data, wrong key/nonce, or AAD mismatch)
  */
-declare function aeadChaCha20Poly1305DecryptWithAad(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad: Uint8Array, authTag: Uint8Array): Uint8Array;
+declare function aeadChaCha20Poly1305DecryptWithAad(
+  ciphertext: Uint8Array,
+  key: Uint8Array,
+  nonce: Uint8Array,
+  aad: Uint8Array,
+  authTag: Uint8Array,
+): Uint8Array;
 //#endregion
 //#region src/public-key-encryption.d.ts
 declare const X25519_PRIVATE_KEY_SIZE = 32;
@@ -314,7 +377,11 @@ declare function ecdsaSign(privateKey: Uint8Array, message: Uint8Array): Uint8Ar
  * @returns `true` if signature is valid, `false` if signature verification fails
  * @throws {Error} If public key is not 33 bytes or signature is not 64 bytes
  */
-declare function ecdsaVerify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+declare function ecdsaVerify(
+  publicKey: Uint8Array,
+  signature: Uint8Array,
+  message: Uint8Array,
+): boolean;
 //#endregion
 //#region src/schnorr-signing.d.ts
 declare const SCHNORR_SIGNATURE_SIZE = 64;
@@ -335,7 +402,11 @@ declare function schnorrSign(ecdsaPrivateKey: Uint8Array, message: Uint8Array): 
  * @param rng - Random number generator for auxiliary randomness
  * @returns 64-byte Schnorr signature
  */
-declare function schnorrSignUsing(ecdsaPrivateKey: Uint8Array, message: Uint8Array, rng: RandomNumberGenerator): Uint8Array;
+declare function schnorrSignUsing(
+  ecdsaPrivateKey: Uint8Array,
+  message: Uint8Array,
+  rng: RandomNumberGenerator,
+): Uint8Array;
 /**
  * Sign a message using Schnorr signature with specific auxiliary randomness.
  * This is useful for deterministic signing in tests.
@@ -345,7 +416,11 @@ declare function schnorrSignUsing(ecdsaPrivateKey: Uint8Array, message: Uint8Arr
  * @param auxRand - 32-byte auxiliary randomness (per BIP-340)
  * @returns 64-byte Schnorr signature
  */
-declare function schnorrSignWithAuxRand(ecdsaPrivateKey: Uint8Array, message: Uint8Array, auxRand: Uint8Array): Uint8Array;
+declare function schnorrSignWithAuxRand(
+  ecdsaPrivateKey: Uint8Array,
+  message: Uint8Array,
+  auxRand: Uint8Array,
+): Uint8Array;
 /**
  * Verify a Schnorr signature (BIP-340).
  *
@@ -354,7 +429,11 @@ declare function schnorrSignWithAuxRand(ecdsaPrivateKey: Uint8Array, message: Ui
  * @param message - Original message
  * @returns true if signature is valid
  */
-declare function schnorrVerify(schnorrPublicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+declare function schnorrVerify(
+  schnorrPublicKey: Uint8Array,
+  signature: Uint8Array,
+  message: Uint8Array,
+): boolean;
 //#endregion
 //#region src/ed25519-signing.d.ts
 declare const ED25519_PUBLIC_KEY_SIZE = 32;
@@ -389,7 +468,11 @@ declare function ed25519Sign(privateKey: Uint8Array, message: Uint8Array): Uint8
  * @returns `true` if signature is valid, `false` if signature verification fails
  * @throws {Error} If public key is not 32 bytes or signature is not 64 bytes
  */
-declare function ed25519Verify(publicKey: Uint8Array, message: Uint8Array, signature: Uint8Array): boolean;
+declare function ed25519Verify(
+  publicKey: Uint8Array,
+  message: Uint8Array,
+  signature: Uint8Array,
+): boolean;
 //#endregion
 //#region src/scrypt.d.ts
 /**
@@ -416,7 +499,14 @@ declare function scrypt(password: Uint8Array, salt: Uint8Array, outputLen: numbe
  * @param p - Parallelization parameter (must be >0)
  * @returns Derived key
  */
-declare function scryptOpt(password: Uint8Array, salt: Uint8Array, outputLen: number, logN: number, r: number, p: number): Uint8Array;
+declare function scryptOpt(
+  password: Uint8Array,
+  salt: Uint8Array,
+  outputLen: number,
+  logN: number,
+  r: number,
+  p: number,
+): Uint8Array;
 //#endregion
 //#region src/argon.d.ts
 /**
@@ -433,5 +523,66 @@ declare function scryptOpt(password: Uint8Array, salt: Uint8Array, outputLen: nu
  */
 declare function argon2id(password: Uint8Array, salt: Uint8Array, outputLen: number): Uint8Array;
 //#endregion
-export { AeadError, CRC32_SIZE, CryptoError, type CryptoResult, ECDSA_MESSAGE_HASH_SIZE, ECDSA_PRIVATE_KEY_SIZE, ECDSA_PUBLIC_KEY_SIZE, ECDSA_SIGNATURE_SIZE, ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, ED25519_PRIVATE_KEY_SIZE, ED25519_PUBLIC_KEY_SIZE, ED25519_SIGNATURE_SIZE, type NumericTypedArray, SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE, SHA256_SIZE, SHA512_SIZE, SYMMETRIC_AUTH_SIZE, SYMMETRIC_KEY_SIZE, SYMMETRIC_NONCE_SIZE, X25519_PRIVATE_KEY_SIZE, X25519_PUBLIC_KEY_SIZE, aeadChaCha20Poly1305Decrypt, aeadChaCha20Poly1305DecryptWithAad, aeadChaCha20Poly1305Encrypt, aeadChaCha20Poly1305EncryptWithAad, argon2id, deriveAgreementPrivateKey, deriveSigningPrivateKey, doubleSha256, ecdsaCompressPublicKey, ecdsaDecompressPublicKey, ecdsaDerivePrivateKey, ecdsaNewPrivateKeyUsing, ecdsaPublicKeyFromPrivateKey, ecdsaSign, ecdsaVerify, ed25519NewPrivateKeyUsing, ed25519PublicKeyFromPrivateKey, ed25519Sign, ed25519Verify, hash_d_exports as hash, hkdfHmacSha256, hmacSha256, hmacSha512, memzero, memzeroVecVecU8, pbkdf2HmacSha256, schnorrPublicKeyFromPrivateKey, schnorrSign, schnorrSignUsing, schnorrSignWithAuxRand, schnorrVerify, scrypt, scryptOpt, sha256, sha512, x25519NewPrivateKeyUsing, x25519PublicKeyFromPrivateKey, x25519SharedKey };
+export {
+  AeadError,
+  CRC32_SIZE,
+  CryptoError,
+  type CryptoResult,
+  ECDSA_MESSAGE_HASH_SIZE,
+  ECDSA_PRIVATE_KEY_SIZE,
+  ECDSA_PUBLIC_KEY_SIZE,
+  ECDSA_SIGNATURE_SIZE,
+  ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE,
+  ED25519_PRIVATE_KEY_SIZE,
+  ED25519_PUBLIC_KEY_SIZE,
+  ED25519_SIGNATURE_SIZE,
+  type NumericTypedArray,
+  SCHNORR_PUBLIC_KEY_SIZE,
+  SCHNORR_SIGNATURE_SIZE,
+  SHA256_SIZE,
+  SHA512_SIZE,
+  SYMMETRIC_AUTH_SIZE,
+  SYMMETRIC_KEY_SIZE,
+  SYMMETRIC_NONCE_SIZE,
+  X25519_PRIVATE_KEY_SIZE,
+  X25519_PUBLIC_KEY_SIZE,
+  aeadChaCha20Poly1305Decrypt,
+  aeadChaCha20Poly1305DecryptWithAad,
+  aeadChaCha20Poly1305Encrypt,
+  aeadChaCha20Poly1305EncryptWithAad,
+  argon2id,
+  deriveAgreementPrivateKey,
+  deriveSigningPrivateKey,
+  doubleSha256,
+  ecdsaCompressPublicKey,
+  ecdsaDecompressPublicKey,
+  ecdsaDerivePrivateKey,
+  ecdsaNewPrivateKeyUsing,
+  ecdsaPublicKeyFromPrivateKey,
+  ecdsaSign,
+  ecdsaVerify,
+  ed25519NewPrivateKeyUsing,
+  ed25519PublicKeyFromPrivateKey,
+  ed25519Sign,
+  ed25519Verify,
+  hash_d_exports as hash,
+  hkdfHmacSha256,
+  hmacSha256,
+  hmacSha512,
+  memzero,
+  memzeroVecVecU8,
+  pbkdf2HmacSha256,
+  schnorrPublicKeyFromPrivateKey,
+  schnorrSign,
+  schnorrSignUsing,
+  schnorrSignWithAuxRand,
+  schnorrVerify,
+  scrypt,
+  scryptOpt,
+  sha256,
+  sha512,
+  x25519NewPrivateKeyUsing,
+  x25519PublicKeyFromPrivateKey,
+  x25519SharedKey,
+};
 //# sourceMappingURL=index.d.mts.map

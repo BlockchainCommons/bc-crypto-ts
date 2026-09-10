@@ -1,64 +1,92 @@
 /**
- * Copyright © 2023-2026 Blockchain Commons, LLC
- * Copyright © 2025-2026 Parity Technologies
+ * The single error type thrown by this package.
  *
+ * @module error
  */
 
-// Ported from bc-crypto-rust/src/error.rs
+/** Machine-readable discriminant for a {@link CryptoError}. */
+export type CryptoErrorCode =
+  "InvalidSize" | "InvalidData" | "AuthenticationFailed" | "Unsupported";
 
-/**
- * AEAD-specific error for authentication failures
- */
-export class AeadError extends Error {
-  constructor(message = "AEAD authentication failed") {
-    super(message);
-    this.name = "AeadError";
-  }
+/** The structured payload each code carries. */
+export interface CryptoErrorDetailsByCode {
+  InvalidSize: { readonly what: string; readonly expected: number; readonly actual: number };
+  InvalidData: { readonly what: string };
+  AuthenticationFailed: unknown;
+  Unsupported: unknown;
 }
 
+/** A {@link CryptoError} whose `details` are discriminated by its `code`. */
+export type CryptoErrorTyped<C extends CryptoErrorCode = CryptoErrorCode> =
+  C extends CryptoErrorCode
+    ? CryptoError & { readonly code: C; readonly details: Readonly<CryptoErrorDetailsByCode[C]> }
+    : never;
+
+const captureStackTrace = (
+  Error as unknown as { captureStackTrace?: (target: object, ctor: unknown) => void }
+).captureStackTrace;
+
 /**
- * Generic crypto error type
+ * Thrown for wrong-length keys, nonces, signatures and public keys
+ * (`InvalidSize`), malformed input (`InvalidData`), AEAD tag mismatch
+ * (`AuthenticationFailed`), and unsupported parameters (`Unsupported`).
  */
 export class CryptoError extends Error {
-  override readonly cause?: Error | undefined;
+  readonly code: CryptoErrorCode;
+  readonly details: unknown;
 
-  constructor(message: string, cause?: Error) {
-    super(message);
+  constructor(
+    code: CryptoErrorCode,
+    message: string,
+    details: unknown = undefined,
+    cause?: unknown,
+  ) {
+    super(message, cause === undefined ? undefined : { cause });
     this.name = "CryptoError";
-    this.cause = cause;
+    this.code = code;
+    this.details = details;
+    Object.setPrototypeOf(this, new.target.prototype);
+    if (typeof captureStackTrace === "function") captureStackTrace(this, CryptoError);
   }
 
-  /**
-   * Create a CryptoError for AEAD authentication failures.
-   *
-   * @param error - Optional underlying AeadError
-   * @returns A CryptoError wrapping the AEAD error
-   */
-  static aead(error?: AeadError): CryptoError {
-    return new CryptoError("AEAD error", error ?? new AeadError());
+  /** Type guard narrowing to the code-discriminated union. */
+  static isCryptoError(value: unknown): value is CryptoErrorTyped {
+    return value instanceof CryptoError;
   }
 
-  /**
-   * Create a CryptoError for invalid parameter values.
-   *
-   * **TS-specific.** Rust's `bc_crypto::Error` enum has no
-   * `InvalidParameter` variant; size validation in Rust is enforced at
-   * compile time via fixed-size array references (e.g. `&[u8; 32]`) or
-   * via `panic!`/`expect(...)` for runtime checks. The TS port has no
-   * fixed-size array types, so it surfaces those same conditions through
-   * a thrown `CryptoError.invalidParameter(...)`. Catching this is
-   * equivalent to defensive guards around an `expect`-style panic on the
-   * Rust side.
-   *
-   * @param message - Description of the invalid parameter
-   * @returns A CryptoError describing the invalid parameter
-   */
-  static invalidParameter(message: string): CryptoError {
-    return new CryptoError(`Invalid parameter: ${message}`);
+  /** `what` had `actual` bytes; `expected` were required. */
+  static invalidSize(
+    what: string,
+    expected: number,
+    actual: number,
+  ): CryptoErrorTyped<"InvalidSize"> {
+    return new CryptoError("InvalidSize", `${what} must be ${expected} bytes, got ${actual}`, {
+      what,
+      expected,
+      actual,
+    }) as CryptoErrorTyped<"InvalidSize">;
+  }
+
+  static invalidData(what: string, message: string): CryptoErrorTyped<"InvalidData"> {
+    return new CryptoError("InvalidData", message, { what }) as CryptoErrorTyped<"InvalidData">;
+  }
+
+  /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */
+  static authenticationFailed(cause?: unknown): CryptoErrorTyped<"AuthenticationFailed"> {
+    return new CryptoError(
+      "AuthenticationFailed",
+      "AEAD authentication failed",
+      undefined,
+      cause,
+    ) as CryptoErrorTyped<"AuthenticationFailed">;
+  }
+
+  static unsupported(message: string): CryptoErrorTyped<"Unsupported"> {
+    return new CryptoError("Unsupported", message) as CryptoErrorTyped<"Unsupported">;
   }
 }
 
-/**
- * Result type for crypto operations (using standard Error)
- */
-export type CryptoResult<T> = T;
+/** @internal Length precondition shared by the key and signature functions. */
+export function requireLength(what: string, bytes: Uint8Array, expected: number): void {
+  if (bytes.length !== expected) throw CryptoError.invalidSize(what, expected, bytes.length);
+}

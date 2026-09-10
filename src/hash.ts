@@ -1,140 +1,113 @@
 /**
- * Copyright © 2023-2026 Blockchain Commons, LLC
- * Copyright © 2025-2026 Parity Technologies
+ * Hashes, MACs, key derivation, and CRC-32.
  *
+ * @module hash
  */
-
-// Ported from bc-crypto-rust/src/hash.rs
-
 import { sha256 as nobleSha256, sha512 as nobleSha512 } from "@noble/hashes/sha2.js";
 import { hmac } from "@noble/hashes/hmac.js";
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 
-// Constants
 export const CRC32_SIZE = 4;
 export const SHA256_SIZE = 32;
 export const SHA512_SIZE = 64;
 
-// CRC-32 lookup table (IEEE polynomial 0xedb88320)
+// CRC-32 lookup table (IEEE polynomial 0xedb88320), built once.
 const CRC32_TABLE = new Uint32Array(256);
 for (let i = 0; i < 256; i++) {
   let crc = i;
-  for (let j = 0; j < 8; j++) {
-    crc = (crc & 1) !== 0 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
-  }
+  for (let j = 0; j < 8; j++) crc = (crc & 1) !== 0 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
   CRC32_TABLE[i] = crc >>> 0;
 }
 
-/**
- * Calculate CRC-32 checksum
- */
+/** CRC-32 (IEEE 802.3 / ISO-HDLC) as an unsigned 32-bit integer. */
 export function crc32(data: Uint8Array): number {
   let crc = 0xffffffff;
-  for (const byte of data) {
-    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  // Indexed loop: the iterator protocol over a typed array is 2× slower here.
+  // eslint-disable-next-line @typescript-eslint/prefer-for-of
+  for (let i = 0; i < data.length; i++) {
+    crc = CRC32_TABLE[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-/**
- * Calculate CRC-32 checksum and return as a 4-byte big-endian array
- */
-export function crc32Data(data: Uint8Array): Uint8Array {
-  return crc32DataOpt(data, false);
+/** Options for {@link crc32Bytes}. */
+export interface Crc32Options {
+  /** Emit the checksum little-endian. Default: big-endian. */
+  readonly littleEndian?: boolean | undefined;
 }
 
-/**
- * Calculate CRC-32 checksum and return as a 4-byte array
- * @param data - Input data
- * @param littleEndian - If true, returns little-endian; otherwise big-endian
- */
-export function crc32DataOpt(data: Uint8Array, littleEndian: boolean): Uint8Array {
-  const checksum = crc32(data);
+/** CRC-32 as four bytes, big-endian unless `littleEndian` is set. */
+export function crc32Bytes(data: Uint8Array, options?: Crc32Options): Uint8Array<ArrayBuffer> {
   const result = new Uint8Array(4);
-  const view = new DataView(result.buffer);
-  view.setUint32(0, checksum, littleEndian);
+  new DataView(result.buffer).setUint32(0, crc32(data), options?.littleEndian ?? false);
   return result;
 }
 
-/**
- * Calculate SHA-256 hash
- */
-export function sha256(data: Uint8Array): Uint8Array {
+export function sha256(data: Uint8Array): Uint8Array<ArrayBuffer> {
   return nobleSha256(data);
 }
 
-/**
- * Calculate double SHA-256 hash (SHA-256 of SHA-256)
- * This is the standard Bitcoin hashing function
- */
-export function doubleSha256(message: Uint8Array): Uint8Array {
-  return sha256(sha256(message));
+/** `sha256(sha256(data))`, the Bitcoin message hash. */
+export function doubleSha256(data: Uint8Array): Uint8Array<ArrayBuffer> {
+  return sha256(sha256(data));
 }
 
-/**
- * Calculate SHA-512 hash
- */
-export function sha512(data: Uint8Array): Uint8Array {
+export function sha512(data: Uint8Array): Uint8Array<ArrayBuffer> {
   return nobleSha512(data);
 }
 
-/**
- * Calculate HMAC-SHA-256
- */
-export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
+export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer> {
   return hmac(nobleSha256, key, message);
 }
 
-/**
- * Calculate HMAC-SHA-512
- */
-export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array {
+export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer> {
   return hmac(nobleSha512, key, message);
 }
 
-/**
- * Derive a key using PBKDF2 with HMAC-SHA-256
- */
-export function pbkdf2HmacSha256(
+/** Options for the PBKDF2 functions. */
+export interface Pbkdf2Options {
+  readonly iterations: number;
+  /** Derived key length in bytes. */
+  readonly dkLen: number;
+}
+
+export function pbkdf2Sha256(
   password: Uint8Array,
   salt: Uint8Array,
-  iterations: number,
-  keyLen: number,
-): Uint8Array {
-  return pbkdf2(nobleSha256, password, salt, { c: iterations, dkLen: keyLen });
+  options: Pbkdf2Options,
+): Uint8Array<ArrayBuffer> {
+  return pbkdf2(nobleSha256, password, salt, {
+    c: options.iterations,
+    dkLen: options.dkLen,
+  });
 }
 
-/**
- * Derive a key using PBKDF2 with HMAC-SHA-512
- */
-export function pbkdf2HmacSha512(
+export function pbkdf2Sha512(
   password: Uint8Array,
   salt: Uint8Array,
-  iterations: number,
-  keyLen: number,
-): Uint8Array {
-  return pbkdf2(nobleSha512, password, salt, { c: iterations, dkLen: keyLen });
+  options: Pbkdf2Options,
+): Uint8Array<ArrayBuffer> {
+  return pbkdf2(nobleSha512, password, salt, {
+    c: options.iterations,
+    dkLen: options.dkLen,
+  });
 }
 
-/**
- * Derive a key using HKDF with HMAC-SHA-256
- */
-export function hkdfHmacSha256(
+/** HKDF-SHA-256 with no `info`, `length` output bytes. */
+export function hkdfSha256(
   keyMaterial: Uint8Array,
   salt: Uint8Array,
-  keyLen: number,
-): Uint8Array {
-  return hkdf(nobleSha256, keyMaterial, salt, undefined, keyLen);
+  length: number,
+): Uint8Array<ArrayBuffer> {
+  return hkdf(nobleSha256, keyMaterial, salt, undefined, length);
 }
 
-/**
- * Derive a key using HKDF with HMAC-SHA-512
- */
-export function hkdfHmacSha512(
+/** HKDF-SHA-512 with no `info`, `length` output bytes. */
+export function hkdfSha512(
   keyMaterial: Uint8Array,
   salt: Uint8Array,
-  keyLen: number,
-): Uint8Array {
-  return hkdf(nobleSha512, keyMaterial, salt, undefined, keyLen);
+  length: number,
+): Uint8Array<ArrayBuffer> {
+  return hkdf(nobleSha512, keyMaterial, salt, undefined, length);
 }

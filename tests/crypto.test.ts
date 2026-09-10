@@ -1,55 +1,26 @@
-// Tests ported from bc-crypto-rust
+// Tests ported from bc-crypto-rust, expressed against the redesigned API.
 
 import {
-  // Hash module — SHA-512 + CRC-32 helpers live behind the `hash` namespace,
-  // matching Rust `bc_crypto::hash::*`.
-  hash,
-  // Top-level hashes
+  crc32,
+  crc32Bytes,
   sha256,
   sha512,
   hmacSha256,
   hmacSha512,
-  pbkdf2HmacSha256,
-  hkdfHmacSha256,
-  // Symmetric encryption
-  aeadChaCha20Poly1305Encrypt,
-  aeadChaCha20Poly1305Decrypt,
-  aeadChaCha20Poly1305EncryptWithAad,
-  aeadChaCha20Poly1305DecryptWithAad,
-  // X25519
-  x25519NewPrivateKeyUsing,
-  x25519PublicKeyFromPrivateKey,
-  x25519SharedKey,
-  deriveAgreementPrivateKey,
+  pbkdf2Sha256,
+  hkdfSha256,
+  chacha20Poly1305,
+  x25519,
   deriveSigningPrivateKey,
-  // ECDSA
-  ecdsaNewPrivateKeyUsing,
-  ecdsaPublicKeyFromPrivateKey,
-  ecdsaDecompressPublicKey,
-  ecdsaCompressPublicKey,
-  ecdsaSign,
-  ecdsaVerify,
-  schnorrPublicKeyFromPrivateKey,
-  // Schnorr
-  schnorrSign,
-  schnorrSignUsing,
-  schnorrSignWithAuxRand,
-  schnorrVerify,
-  // Ed25519
-  ed25519NewPrivateKeyUsing,
-  ed25519PublicKeyFromPrivateKey,
-  ed25519Sign,
-  ed25519Verify,
-  // KDF
+  ecdsa,
+  schnorr,
+  ed25519,
   scrypt,
-  scryptOpt,
   argon2id,
-  // Memzero
   memzero,
+  CryptoError,
 } from "../src/index.js";
 import { SecureRng, SeededRng, randomBytes, testRandomBytes } from "@blockchaincommons/rand";
-
-const { crc32, crc32Data, crc32DataOpt } = hash;
 
 // Helper to convert hex string to Uint8Array
 function hexToBytes(hex: string): Uint8Array {
@@ -74,11 +45,11 @@ describe("Hash functions", () => {
     const checksum = crc32(data);
     expect(checksum).toBe(0xebe6c6e6);
 
-    const checksumData = crc32Data(data);
+    const checksumData = crc32Bytes(data);
     expect(bytesToHex(checksumData)).toBe("ebe6c6e6");
 
     // Little-endian variant - matches Rust crc32_data_opt(input, true)
-    const checksumLittleEndian = crc32DataOpt(data, true);
+    const checksumLittleEndian = crc32Bytes(data, { littleEndian: true });
     expect(bytesToHex(checksumLittleEndian)).toBe("e6c6e6eb");
   });
 
@@ -126,7 +97,7 @@ describe("Hash functions", () => {
     const iterations = 1;
     const keyLen = 32;
 
-    const key = pbkdf2HmacSha256(password, salt, iterations, keyLen);
+    const key = pbkdf2Sha256(password, salt, { iterations, dkLen: keyLen });
     expect(bytesToHex(key)).toBe(
       "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b",
     );
@@ -138,14 +109,14 @@ describe("Hash functions", () => {
     const salt = hexToBytes("8e94ef805b93e683ff18");
     const keyLen = 32;
 
-    const derivedKey = hkdfHmacSha256(keyMaterial, salt, keyLen);
+    const derivedKey = hkdfSha256(keyMaterial, salt, keyLen);
     expect(bytesToHex(derivedKey)).toBe(
       "13485067e21af17c0900f70d885f02593c0e61e46f86450e4a0201a54c14db76",
     );
 
     // Different salt produces different output
     const differentSalt = hexToBytes("0d0e0f101112131415161718");
-    const differentKey = hkdfHmacSha256(keyMaterial, differentSalt, keyLen);
+    const differentKey = hkdfSha256(keyMaterial, differentSalt, keyLen);
     expect(bytesToHex(derivedKey)).not.toBe(bytesToHex(differentKey));
   });
 });
@@ -160,7 +131,9 @@ describe("Symmetric encryption", () => {
     const nonce = hexToBytes("070000004041424344454647");
     const aad = hexToBytes("50515253c0c1c2c3c4c5c6c7");
 
-    const [ciphertext, authTag] = aeadChaCha20Poly1305EncryptWithAad(plaintext, key, nonce, aad);
+    const sealed = chacha20Poly1305.encrypt(key, nonce, plaintext, { aad });
+    const ciphertext = sealed.subarray(0, sealed.length - 16);
+    const authTag = sealed.subarray(sealed.length - 16);
 
     const expectedCiphertext = hexToBytes(
       "d31a8d34648e60db7b86afbc53ef7ec2a4aded51296e08fea9e2b5a736ee62d63dbea45e8ca9671282fafb69da92728b1a71de0a9e060b2905d6a5b67ecd3b3692ddbd7f2d778b8c9803aee328091b58fab324e4fad675945585808b4831d7bc3ff4def08e4b7a9de576d26586cec64b6116",
@@ -171,7 +144,7 @@ describe("Symmetric encryption", () => {
     expect(bytesToHex(authTag)).toBe(bytesToHex(expectedAuthTag));
 
     // Decrypt and verify
-    const decrypted = aeadChaCha20Poly1305DecryptWithAad(ciphertext, key, nonce, aad, authTag);
+    const decrypted = chacha20Poly1305.decrypt(key, nonce, sealed, { aad });
     expect(new TextDecoder().decode(decrypted)).toBe(
       "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it.",
     );
@@ -183,8 +156,8 @@ describe("Symmetric encryption", () => {
     const nonce = randomBytes(12, { rng });
     const plaintext = new TextEncoder().encode("Hello, World!");
 
-    const [ciphertext, authTag] = aeadChaCha20Poly1305Encrypt(plaintext, key, nonce);
-    const decrypted = aeadChaCha20Poly1305Decrypt(ciphertext, key, nonce, authTag);
+    const sealed = chacha20Poly1305.encrypt(key, nonce, plaintext);
+    const decrypted = chacha20Poly1305.decrypt(key, nonce, sealed);
 
     expect(new TextDecoder().decode(decrypted)).toBe("Hello, World!");
   });
@@ -194,11 +167,10 @@ describe("Symmetric encryption", () => {
     const nonce = hexToBytes("070000004041424344454647");
     const plaintext = new Uint8Array(0);
 
-    const [ciphertext, authTag] = aeadChaCha20Poly1305Encrypt(plaintext, key, nonce);
-    expect(ciphertext.length).toBe(0);
-    expect(authTag.length).toBe(16);
+    const sealed = chacha20Poly1305.encrypt(key, nonce, plaintext);
+    expect(sealed.length).toBe(16);
 
-    const decrypted = aeadChaCha20Poly1305Decrypt(ciphertext, key, nonce, authTag);
+    const decrypted = chacha20Poly1305.decrypt(key, nonce, sealed);
     expect(decrypted.length).toBe(0);
   });
 });
@@ -206,10 +178,10 @@ describe("Symmetric encryption", () => {
 describe("X25519 Key Agreement", () => {
   test("test_x25519_keys", () => {
     const rng = new SecureRng();
-    const privateKey = x25519NewPrivateKeyUsing(rng);
+    const privateKey = x25519.generatePrivateKey({ rng });
     expect(privateKey.length).toBe(32);
 
-    const publicKey = x25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = x25519.publicKey(privateKey);
     expect(publicKey.length).toBe(32);
   });
 
@@ -217,16 +189,16 @@ describe("X25519 Key Agreement", () => {
     const rng = new SecureRng();
 
     // Alice's keys
-    const alicePrivate = x25519NewPrivateKeyUsing(rng);
-    const alicePublic = x25519PublicKeyFromPrivateKey(alicePrivate);
+    const alicePrivate = x25519.generatePrivateKey({ rng });
+    const alicePublic = x25519.publicKey(alicePrivate);
 
     // Bob's keys
-    const bobPrivate = x25519NewPrivateKeyUsing(rng);
-    const bobPublic = x25519PublicKeyFromPrivateKey(bobPrivate);
+    const bobPrivate = x25519.generatePrivateKey({ rng });
+    const bobPublic = x25519.publicKey(bobPrivate);
 
     // Both should derive the same shared secret
-    const aliceShared = x25519SharedKey(alicePrivate, bobPublic);
-    const bobShared = x25519SharedKey(bobPrivate, alicePublic);
+    const aliceShared = x25519.sharedKey(alicePrivate, bobPublic);
+    const bobShared = x25519.sharedKey(bobPrivate, alicePublic);
 
     expect(bytesToHex(aliceShared)).toBe(bytesToHex(bobShared));
   });
@@ -236,22 +208,22 @@ describe("X25519 Key Agreement", () => {
     const rng = SeededRng.forTesting();
 
     // Alice's keys (deterministic from fake RNG)
-    const alicePrivate = x25519NewPrivateKeyUsing(rng);
+    const alicePrivate = x25519.generatePrivateKey({ rng });
     expect(bytesToHex(alicePrivate)).toBe(
       "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
     );
-    const alicePublic = x25519PublicKeyFromPrivateKey(alicePrivate);
+    const alicePublic = x25519.publicKey(alicePrivate);
     expect(bytesToHex(alicePublic)).toBe(
       "f1bd7a7e118ea461eba95126a3efef543ebb78439d1574bedcbe7d89174cf025",
     );
 
     // Bob's keys (deterministic from fake RNG)
-    const bobPrivate = x25519NewPrivateKeyUsing(rng);
-    const bobPublic = x25519PublicKeyFromPrivateKey(bobPrivate);
+    const bobPrivate = x25519.generatePrivateKey({ rng });
+    const bobPublic = x25519.publicKey(bobPrivate);
 
     // Both should derive the same shared key
-    const aliceShared = x25519SharedKey(alicePrivate, bobPublic);
-    const bobShared = x25519SharedKey(bobPrivate, alicePublic);
+    const aliceShared = x25519.sharedKey(alicePrivate, bobPublic);
+    const bobShared = x25519.sharedKey(bobPrivate, alicePublic);
 
     expect(bytesToHex(aliceShared)).toBe(bytesToHex(bobShared));
 
@@ -266,7 +238,7 @@ describe("X25519 Key Agreement", () => {
     const password = new TextEncoder().encode("password");
 
     // Test deriveAgreementPrivateKey - matches Rust exactly
-    const derivedAgreementKey = deriveAgreementPrivateKey(password);
+    const derivedAgreementKey = x25519.deriveAgreementPrivateKey(password);
     expect(bytesToHex(derivedAgreementKey)).toBe(
       "7b19769132648ff43ae60cbaa696d5be3f6d53e6645db72e2d37516f0729619f",
     );
@@ -282,34 +254,34 @@ describe("X25519 Key Agreement", () => {
 describe("ECDSA", () => {
   test("test_ecdsa_keys", () => {
     const rng = new SecureRng();
-    const privateKey = ecdsaNewPrivateKeyUsing(rng);
+    const privateKey = ecdsa.generatePrivateKey({ rng });
     expect(privateKey.length).toBe(32);
 
-    const publicKey = ecdsaPublicKeyFromPrivateKey(privateKey);
+    const publicKey = ecdsa.publicKey(privateKey);
     expect(publicKey.length).toBe(33); // Compressed
 
-    const uncompressed = ecdsaDecompressPublicKey(publicKey);
+    const uncompressed = ecdsa.decompressPublicKey(publicKey);
     expect(uncompressed.length).toBe(65);
 
-    const recompressed = ecdsaCompressPublicKey(uncompressed);
+    const recompressed = ecdsa.compressPublicKey(uncompressed);
     expect(bytesToHex(recompressed)).toBe(bytesToHex(publicKey));
   });
 
   test("test_ecdsa_signing", () => {
     const rng = new SecureRng();
-    const privateKey = ecdsaNewPrivateKeyUsing(rng);
-    const publicKey = ecdsaPublicKeyFromPrivateKey(privateKey);
+    const privateKey = ecdsa.generatePrivateKey({ rng });
+    const publicKey = ecdsa.publicKey(privateKey);
     const message = new TextEncoder().encode("Hello, World!");
 
-    const signature = ecdsaSign(privateKey, message);
+    const signature = ecdsa.sign(privateKey, message);
     expect(signature.length).toBe(64);
 
-    const isValid = ecdsaVerify(publicKey, signature, message);
+    const isValid = ecdsa.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
 
     // Verify with wrong message fails
     const wrongMessage = new TextEncoder().encode("Wrong message");
-    const isInvalid = ecdsaVerify(publicKey, signature, wrongMessage);
+    const isInvalid = ecdsa.verify(publicKey, signature, wrongMessage);
     expect(isInvalid).toBe(false);
   });
 
@@ -320,16 +292,16 @@ describe("ECDSA", () => {
     );
 
     const rng = SeededRng.forTesting();
-    const privateKey = ecdsaNewPrivateKeyUsing(rng);
-    const publicKey = ecdsaPublicKeyFromPrivateKey(privateKey);
-    const signature = ecdsaSign(privateKey, MESSAGE);
+    const privateKey = ecdsa.generatePrivateKey({ rng });
+    const publicKey = ecdsa.publicKey(privateKey);
+    const signature = ecdsa.sign(privateKey, MESSAGE);
 
     // Verify exact signature matches Rust implementation
     expect(bytesToHex(signature)).toBe(
       "e75702ed8f645ce7fe510507b2403029e461ef4570d12aa440e4f81385546a13740b7d16878ff0b46b1cbe08bc218ccb0b00937b61c4707de2ca6148508e51fb",
     );
 
-    expect(ecdsaVerify(publicKey, signature, MESSAGE)).toBe(true);
+    expect(ecdsa.verify(publicKey, signature, MESSAGE)).toBe(true);
   });
 });
 
@@ -340,32 +312,32 @@ describe("Schnorr", () => {
   // the byte-identical signature.
   test("test_schnorr_sign (deterministic, matches Rust)", () => {
     const rng = SeededRng.forTesting();
-    const privateKey = ecdsaNewPrivateKeyUsing(rng);
+    const privateKey = ecdsa.generatePrivateKey({ rng });
     expect(bytesToHex(privateKey)).toBe(
       "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
     );
 
     const message = new TextEncoder().encode("Hello World");
-    const signature = schnorrSignUsing(privateKey, message, rng);
+    const signature = schnorr.sign(privateKey, message, { rng });
     expect(signature.length).toBe(64);
     expect(bytesToHex(signature)).toBe(
       "8f6ec4edbe1a6d96edfc5f15e18e06a6e2559a3426c52d2c38fec17fe7e0cafc95177206d018662a279f2b571224cf07006939fc25d0cae7a7e7b44a4b25f543",
     );
 
-    const schnorrPublicKey = schnorrPublicKeyFromPrivateKey(privateKey);
-    expect(schnorrVerify(schnorrPublicKey, signature, message)).toBe(true);
+    const schnorrPublicKey = schnorr.publicKey(privateKey);
+    expect(schnorr.verify(schnorrPublicKey, signature, message)).toBe(true);
   });
 
   test("schnorrSign roundtrips with secure RNG", () => {
-    const privateKey = ecdsaNewPrivateKeyUsing(new SecureRng());
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const privateKey = ecdsa.generatePrivateKey();
+    const publicKey = schnorr.publicKey(privateKey);
     expect(publicKey.length).toBe(32);
 
     const message = new TextEncoder().encode("Hello, World!");
-    const signature = schnorrSign(privateKey, message);
+    const signature = schnorr.sign(privateKey, message);
     expect(signature.length).toBe(64);
 
-    expect(schnorrVerify(publicKey, signature, message)).toBe(true);
+    expect(schnorr.verify(publicKey, signature, message)).toBe(true);
   });
 
   // BIP-340 Test Vector 0
@@ -373,7 +345,7 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0000000000000000000000000000000000000000000000000000000000000003",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(
       "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
     );
@@ -381,12 +353,12 @@ describe("Schnorr", () => {
     const message = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature)).toBe(
       "e907831f80848d1069a5371b402410364bdf1c5f8307b0084c55f1ce2dca821525f66a4a85ea8b71e482a74f382d2ce5ebeee8fdb2172f477df4900d310536c0",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -395,7 +367,7 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
     expect(bytesToHex(publicKey).toLowerCase()).toBe(
       "dff1d77f2a671c5f36183726db2341be58feae1da2deced843240f7b502ba659",
     );
@@ -403,12 +375,12 @@ describe("Schnorr", () => {
     const message = hexToBytes("243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89");
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000001");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "6896bd60eeae296db48a229ff71dfe071bde413e6d43f917dc8dcf8c78de33418906d11ac976abccb20b091292bff4ea897efcb639ea871cfa95f6de339e4b0a",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -417,7 +389,7 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C9",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
     expect(bytesToHex(publicKey).toLowerCase()).toBe(
       "dd308afec5777e13121fa72b9cc1b7cc0139715309b086c960e18fd969774eb8",
     );
@@ -425,12 +397,12 @@ describe("Schnorr", () => {
     const message = hexToBytes("7E2D58D8B3BCDF1ABADEC7829054F90DDA9805AAB56C77333024B9D0A508B75C");
     const auxRand = hexToBytes("C87AA53824B4D7AE2EB035A2B5BBBCCC080E76CDC6D1692C4B0B62D798E6D906");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "5831aaeed7b44bb74e5eab94ba9d4294c49bcf2a60728d8b4c200f50dd313c1bab745879a5ad954a72c45a91c3a51d3c7adea98d82f8481e0e1e03674a6f3fb7",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -439,7 +411,7 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
     expect(bytesToHex(publicKey).toLowerCase()).toBe(
       "25d1dff95105f5253c4022f628a996ad3a0d95fbf21d468a1b33f8c160d8f517",
     );
@@ -447,12 +419,12 @@ describe("Schnorr", () => {
     const message = hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
     const auxRand = hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "7eb0509757e246f19449885651611cb965ecc1a187dd51b64fda1edc9637d5ec97582b9cb13db3933705b32ba982af5af25fd78881ebb32771fc5922efc66ea3",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -466,7 +438,7 @@ describe("Schnorr", () => {
       "00000000000000000000003B78CE563F89A0ED9414F5AA28AD0D96D6795F9C6376AFB1548AF603B3EB45C9F8207DEE1060CB71C04E80F593060B07D28308D7F4",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -483,7 +455,7 @@ describe("Schnorr", () => {
     // This should either throw or return false
     let result: boolean;
     try {
-      result = schnorrVerify(publicKey, signature, message);
+      result = schnorr.verify(publicKey, signature, message);
     } catch {
       result = false;
     }
@@ -500,7 +472,7 @@ describe("Schnorr", () => {
       "FFF97BD5755EEEA420453A14355235D382F6472F8568A18B2F057A14602975563CC27944640AC607CD107AE10923D9EF7A73C643E166BE5EBEAFA34B1AC553E2",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -514,7 +486,7 @@ describe("Schnorr", () => {
       "1FA62E331EDBC21C394792D2AB1100A7B432B013DF3F6FF4F99FCB33E0E1515F28890B3EDB6E7189B630448B515CE4F8622A954CFE545735AAEA5134FCCDB2BD",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -528,7 +500,7 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E177769961764B3AA9B2FFCB6EF947B6887A226E8D7C93E00C5ED0C1834FF0D0C2E6DA6",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -542,7 +514,7 @@ describe("Schnorr", () => {
       "0000000000000000000000000000000000000000000000000000000000000000123DDA8328AF9C23A94C1FEECFD123BA4FB73476F0D594DCB65C6425BD186051",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -556,7 +528,7 @@ describe("Schnorr", () => {
       "00000000000000000000000000000000000000000000000000000000000000017615FBAF5AE28864013C099742DEADB4DBA87F11AC6754F93780D5A1837CF197",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -570,7 +542,7 @@ describe("Schnorr", () => {
       "4A298DACAE57395A15D0795DDBFD1DCB564DA82B0F269BC70A74F8220429BA1D69E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -584,7 +556,7 @@ describe("Schnorr", () => {
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F69E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -598,7 +570,7 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E177769FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(false);
   });
 
@@ -615,7 +587,7 @@ describe("Schnorr", () => {
     // This should either throw or return false
     let result: boolean;
     try {
-      result = schnorrVerify(publicKey, signature, message);
+      result = schnorr.verify(publicKey, signature, message);
     } catch {
       result = false;
     }
@@ -627,7 +599,7 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0340034003400340034003400340034003400340034003400340034003400340",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
     expect(bytesToHex(publicKey).toLowerCase()).toBe(
       "778caa53b4393ac467774d09497a87224bf9fab6f6e68b23086497324d6fd117",
     );
@@ -635,12 +607,12 @@ describe("Schnorr", () => {
     const message = hexToBytes("");
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "71535db165ecd9fbbc046e5ffaea61186bb6ad436732fccc25291a55895464cf6069ce26bf03466228f19a3a62db8a649f2d560fac652827d1af0574e427ab63",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -649,17 +621,17 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0340034003400340034003400340034003400340034003400340034003400340",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
 
     const message = hexToBytes("11");
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "08a20a0afef64124649232e0693c583ab1b9934ae63b4c3511f3ae1134c6a303ea3173bfea6683bd101fa5aa5dbc1996fe7cacfc5a577d33ec14564cec2bacbf",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -668,17 +640,17 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0340034003400340034003400340034003400340034003400340034003400340",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
 
     const message = hexToBytes("0102030405060708090A0B0C0D0E0F1011");
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "5130f39a4059b43bc7cac09a19ece52b5d8699d1a71e3c52da9afdb6b50ac370c4a482b77bf960f8681540e25b6771ece1e5a37fd80e5a51897c5566a97ea5a5",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -687,19 +659,19 @@ describe("Schnorr", () => {
     const privateKey = hexToBytes(
       "0340034003400340034003400340034003400340034003400340034003400340",
     );
-    const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
+    const publicKey = schnorr.publicKey(privateKey);
 
     const message = hexToBytes(
       "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
     );
     const auxRand = hexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
 
-    const signature = schnorrSignWithAuxRand(privateKey, message, auxRand);
+    const signature = schnorr.sign(privateKey, message, { auxRand });
     expect(bytesToHex(signature).toLowerCase()).toBe(
       "403b12b0d8555a344175ea7ec746566303321e5dbfa8be6f091635163eca79a8585ed3e3170807e7c03b720fc54c7b23897fcba0e9d0b4a06894cfd249f22367",
     );
 
-    const isValid = schnorrVerify(publicKey, signature, message);
+    const isValid = schnorr.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 });
@@ -719,36 +691,36 @@ describe("Ed25519", () => {
       "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
     );
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(
       "76f863e1024d8ff6cd8ad56c434e01dbbf2999cfc2f132fc7f41ca19fed7a97c",
     );
 
-    const signature = ed25519Sign(privateKey, MESSAGE);
+    const signature = ed25519.sign(privateKey, MESSAGE);
     expect(bytesToHex(signature)).toBe(
       "647cc65243e8a61dc273242b13008994e4658a7e0bcbb1fd621b01dad2ddf7577901c4c4d4ea484ae5ca3172c4b8a75877bd7d5349a7055acdc023b04fcd0406",
     );
 
-    expect(ed25519Verify(publicKey, MESSAGE, signature)).toBe(true);
+    expect(ed25519.verify(publicKey, signature, MESSAGE)).toBe(true);
   });
 
   test("ed25519 roundtrips with secure RNG", () => {
     const rng = new SecureRng();
-    const privateKey = ed25519NewPrivateKeyUsing(rng);
+    const privateKey = ed25519.generatePrivateKey({ rng });
     expect(privateKey.length).toBe(32);
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(publicKey.length).toBe(32);
 
     const message = new TextEncoder().encode("Hello, World!");
-    const signature = ed25519Sign(privateKey, message);
+    const signature = ed25519.sign(privateKey, message);
     expect(signature.length).toBe(64);
 
-    expect(ed25519Verify(publicKey, message, signature)).toBe(true);
+    expect(ed25519.verify(publicKey, signature, message)).toBe(true);
 
     // Verify with wrong message fails
     const wrongMessage = new TextEncoder().encode("Wrong message");
-    expect(ed25519Verify(publicKey, wrongMessage, signature)).toBe(false);
+    expect(ed25519.verify(publicKey, signature, wrongMessage)).toBe(false);
   });
 
   // RFC 8032 Test Vector 1
@@ -764,13 +736,13 @@ describe("Ed25519", () => {
       "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
     );
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(bytesToHex(expectedPublicKey));
 
-    const signature = ed25519Sign(privateKey, message);
+    const signature = ed25519.sign(privateKey, message);
     expect(bytesToHex(signature)).toBe(bytesToHex(expectedSignature));
 
-    const isValid = ed25519Verify(publicKey, message, signature);
+    const isValid = ed25519.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -787,13 +759,13 @@ describe("Ed25519", () => {
       "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
     );
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(bytesToHex(expectedPublicKey));
 
-    const signature = ed25519Sign(privateKey, message);
+    const signature = ed25519.sign(privateKey, message);
     expect(bytesToHex(signature)).toBe(bytesToHex(expectedSignature));
 
-    const isValid = ed25519Verify(publicKey, message, signature);
+    const isValid = ed25519.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -810,13 +782,13 @@ describe("Ed25519", () => {
       "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a",
     );
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(bytesToHex(expectedPublicKey));
 
-    const signature = ed25519Sign(privateKey, message);
+    const signature = ed25519.sign(privateKey, message);
     expect(bytesToHex(signature)).toBe(bytesToHex(expectedSignature));
 
-    const isValid = ed25519Verify(publicKey, message, signature);
+    const isValid = ed25519.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 
@@ -835,13 +807,13 @@ describe("Ed25519", () => {
       "0aab4c900501b3e24d7cdf4663326a3a87df5e4843b2cbdb67cbf6e460fec350aa5371b1508f9f4528ecea23c436d94b5e8fcd4f681e30a6ac00a9704a188a03",
     );
 
-    const publicKey = ed25519PublicKeyFromPrivateKey(privateKey);
+    const publicKey = ed25519.publicKey(privateKey);
     expect(bytesToHex(publicKey)).toBe(bytesToHex(expectedPublicKey));
 
-    const signature = ed25519Sign(privateKey, message);
+    const signature = ed25519.sign(privateKey, message);
     expect(bytesToHex(signature)).toBe(bytesToHex(expectedSignature));
 
-    const isValid = ed25519Verify(publicKey, message, signature);
+    const isValid = ed25519.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
   });
 });
@@ -851,8 +823,8 @@ describe("Scrypt", () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("salt");
 
-    const key1 = scrypt(password, salt, 32);
-    const key2 = scrypt(password, salt, 32);
+    const key1 = scrypt(password, salt, { dkLen: 32 });
+    const key2 = scrypt(password, salt, { dkLen: 32 });
 
     expect(key1.length).toBe(32);
     expect(bytesToHex(key1)).toBe(bytesToHex(key2)); // Deterministic
@@ -864,7 +836,7 @@ describe("Scrypt", () => {
   test("scrypt cross-platform vector (matches Rust defaults)", { timeout: 10_000 }, () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("salt");
-    expect(bytesToHex(scrypt(password, salt, 32))).toBe(
+    expect(bytesToHex(scrypt(password, salt, { dkLen: 32 }))).toBe(
       "621b282083cea28c49ab3673360283cff9afe85b3e6a409bebc800563cc08c85",
     );
   });
@@ -874,8 +846,8 @@ describe("Scrypt", () => {
     const salt1 = new TextEncoder().encode("salt1");
     const salt2 = new TextEncoder().encode("salt2");
 
-    const key1 = scrypt(password, salt1, 32);
-    const key2 = scrypt(password, salt2, 32);
+    const key1 = scrypt(password, salt1, { dkLen: 32 });
+    const key2 = scrypt(password, salt2, { dkLen: 32 });
 
     expect(bytesToHex(key1)).not.toBe(bytesToHex(key2));
   });
@@ -885,7 +857,7 @@ describe("Scrypt", () => {
     const salt = new TextEncoder().encode("salt");
 
     // Lower parameters for faster test
-    const key = scryptOpt(password, salt, 32, 10, 8, 1);
+    const key = scrypt(password, salt, { dkLen: 32, logN: 10, r: 8, p: 1 });
     expect(key.length).toBe(32);
   });
 
@@ -895,7 +867,7 @@ describe("Scrypt", () => {
     const salt = new TextEncoder().encode("salt");
 
     for (const len of [16, 24, 32, 64]) {
-      const output = scrypt(password, salt, len);
+      const output = scrypt(password, salt, { dkLen: len });
       expect(output.length).toBe(len);
     }
   });
@@ -907,8 +879,8 @@ describe("Argon2id", () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("example salt");
 
-    const key1 = argon2id(password, salt, 32);
-    const key2 = argon2id(password, salt, 32);
+    const key1 = argon2id(password, salt, { dkLen: 32 });
+    const key2 = argon2id(password, salt, { dkLen: 32 });
 
     expect(key1.length).toBe(32);
     expect(bytesToHex(key1)).toBe(bytesToHex(key2)); // Deterministic
@@ -920,7 +892,7 @@ describe("Argon2id", () => {
   test("argon2id cross-platform vector (matches Rust defaults)", () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("example salt");
-    expect(bytesToHex(argon2id(password, salt, 32))).toBe(
+    expect(bytesToHex(argon2id(password, salt, { dkLen: 32 }))).toBe(
       "a4057eab535f8df96dcad517cf66948e23b52d1d7a5e025c5976e69d26f614f0",
     );
   }, 30_000);
@@ -932,8 +904,8 @@ describe("Argon2id", () => {
     const salt1 = new TextEncoder().encode("example salt");
     const salt2 = new TextEncoder().encode("example salt2");
 
-    const key1 = argon2id(password, salt1, 32);
-    const key2 = argon2id(password, salt2, 32);
+    const key1 = argon2id(password, salt1, { dkLen: 32 });
+    const key2 = argon2id(password, salt2, { dkLen: 32 });
 
     expect(bytesToHex(key1)).not.toBe(bytesToHex(key2));
   }, 30_000);
@@ -944,5 +916,43 @@ describe("Memzero", () => {
     const data = new Uint8Array([1, 2, 3, 4, 5]);
     memzero(data);
     expect(Array.from(data)).toEqual([0, 0, 0, 0, 0]);
+  });
+});
+
+describe("CryptoError", () => {
+  test("wrong-length key reports InvalidSize with details", () => {
+    let err: unknown;
+    try {
+      ecdsa.publicKey(new Uint8Array(31));
+    } catch (e) {
+      err = e;
+    }
+    expect(CryptoError.isCryptoError(err)).toBe(true);
+    if (CryptoError.isCryptoError(err) && err.code === "InvalidSize") {
+      expect(err.details).toEqual({ what: "ECDSA private key", expected: 32, actual: 31 });
+      expect(err.name).toBe("CryptoError");
+      expect(err instanceof Error).toBe(true);
+    } else {
+      throw new Error("expected InvalidSize");
+    }
+  });
+  test("tampered AEAD reports AuthenticationFailed", () => {
+    const key = new Uint8Array(32);
+    const nonce = new Uint8Array(12);
+    const sealed = chacha20Poly1305.encrypt(key, nonce, new Uint8Array([1, 2, 3]));
+    sealed[sealed.length - 1] ^= 1;
+    expect(() => chacha20Poly1305.decrypt(key, nonce, sealed)).toThrow(CryptoError);
+    try {
+      chacha20Poly1305.decrypt(key, nonce, sealed);
+    } catch (e) {
+      expect((e as CryptoError).code).toBe("AuthenticationFailed");
+    }
+  });
+  test("verify never throws on malformed signatures of the right length", () => {
+    const priv = new Uint8Array(32).fill(7);
+    const bad = new Uint8Array(64).fill(0xff);
+    expect(ecdsa.verify(ecdsa.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
+    expect(schnorr.verify(schnorr.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
+    expect(ed25519.verify(ed25519.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
   });
 });

@@ -283,8 +283,10 @@ export function redesignedAdapterFor(m: any, rand: any): VectorApi {
     crc32Bytes: (d, le) => m.crc32Bytes(d, { littleEndian: le }),
     hmacSha256: m.hmacSha256,
     hmacSha512: m.hmacSha512,
-    pbkdf2Sha256: m.pbkdf2Sha256,
-    pbkdf2Sha512: m.pbkdf2Sha512,
+    pbkdf2Sha256: (pw, salt, iter, len) =>
+      m.pbkdf2Sha256(pw, salt, { iterations: iter, dkLen: len }),
+    pbkdf2Sha512: (pw, salt, iter, len) =>
+      m.pbkdf2Sha512(pw, salt, { iterations: iter, dkLen: len }),
     hkdfSha256: m.hkdfSha256,
     hkdfSha512: m.hkdfSha512,
     scrypt: (pw, salt, len, n, r, p) => m.scrypt(pw, salt, { dkLen: len, logN: n, r, p }),

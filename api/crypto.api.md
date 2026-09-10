@@ -7,48 +7,124 @@
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 
 // @public
-export function aeadChaCha20Poly1305Decrypt(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array, authTag: Uint8Array): Uint8Array;
+export interface AeadOptions {
+    readonly aad?: Uint8Array | undefined;
+}
+
+// @public (undocumented)
+export function argon2id(password: Uint8Array, salt: Uint8Array, options: Argon2idOptions): Uint8Array<ArrayBuffer>;
 
 // @public
-export function aeadChaCha20Poly1305DecryptWithAad(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad: Uint8Array, authTag: Uint8Array): Uint8Array;
-
-// @public
-export function aeadChaCha20Poly1305Encrypt(plaintext: Uint8Array, key: Uint8Array, nonce: Uint8Array): [Uint8Array, Uint8Array];
-
-// @public
-export function aeadChaCha20Poly1305EncryptWithAad(plaintext: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad: Uint8Array): [Uint8Array, Uint8Array];
-
-// @public
-export class AeadError extends Error {
-    constructor(message?: string);
+export interface Argon2idOptions {
+    readonly dkLen: number;
+    readonly m?: number | undefined;
+    readonly p?: number | undefined;
+    readonly t?: number | undefined;
 }
 
 // @public
-export function argon2id(password: Uint8Array, salt: Uint8Array, outputLen: number): Uint8Array;
+export interface Chacha20Poly1305 {
+    decrypt(key: Uint8Array, nonce: Uint8Array, sealed: Uint8Array, options?: AeadOptions): Uint8Array<ArrayBuffer>;
+    encrypt(key: Uint8Array, nonce: Uint8Array, plaintext: Uint8Array, options?: AeadOptions): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly KEY_SIZE: 32;
+    // (undocumented)
+    readonly NONCE_SIZE: 12;
+    // (undocumented)
+    readonly TAG_SIZE: 16;
+}
+
+// @public
+export const chacha20Poly1305: Chacha20Poly1305;
+
+// @public
+export function crc32(data: Uint8Array): number;
 
 // @public (undocumented)
 export const CRC32_SIZE = 4;
 
 // @public
-export class CryptoError extends Error {
-    constructor(message: string, cause?: Error);
-    static aead(error?: AeadError): CryptoError;
-    // (undocumented)
-    override readonly cause?: Error | undefined;
-    static invalidParameter(message: string): CryptoError;
+export function crc32Bytes(data: Uint8Array, options?: Crc32Options): Uint8Array<ArrayBuffer>;
+
+// @public
+export interface Crc32Options {
+    readonly littleEndian?: boolean | undefined;
 }
 
 // @public
-export type CryptoResult<T> = T;
+export class CryptoError extends Error {
+    constructor(code: CryptoErrorCode, message: string, details?: unknown, cause?: unknown);
+    static authenticationFailed(cause?: unknown): CryptoErrorTyped<"AuthenticationFailed">;
+    // (undocumented)
+    readonly code: CryptoErrorCode;
+    // (undocumented)
+    readonly details: unknown;
+    // (undocumented)
+    static invalidData(what: string, message: string): CryptoErrorTyped<"InvalidData">;
+    static invalidSize(what: string, expected: number, actual: number): CryptoErrorTyped<"InvalidSize">;
+    static isCryptoError(value: unknown): value is CryptoErrorTyped;
+    // (undocumented)
+    static unsupported(message: string): CryptoErrorTyped<"Unsupported">;
+}
 
 // @public
-export function deriveAgreementPrivateKey(keyMaterial: Uint8Array): Uint8Array;
+export type CryptoErrorCode = "InvalidSize" | "InvalidData" | "AuthenticationFailed" | "Unsupported";
 
 // @public
-export function deriveSigningPrivateKey(keyMaterial: Uint8Array): Uint8Array;
+export interface CryptoErrorDetailsByCode {
+    // (undocumented)
+    AuthenticationFailed: unknown;
+    // (undocumented)
+    InvalidData: {
+        readonly what: string;
+    };
+    // (undocumented)
+    InvalidSize: {
+        readonly what: string;
+        readonly expected: number;
+        readonly actual: number;
+    };
+    // (undocumented)
+    Unsupported: unknown;
+}
 
 // @public
-export function doubleSha256(message: Uint8Array): Uint8Array;
+export type CryptoErrorTyped<C extends CryptoErrorCode = CryptoErrorCode> = C extends CryptoErrorCode ? CryptoError & {
+    readonly code: C;
+    readonly details: Readonly<CryptoErrorDetailsByCode[C]>;
+} : never;
+
+// @public
+export function deriveSigningPrivateKey(keyMaterial: Uint8Array): Uint8Array<ArrayBuffer>;
+
+// @public
+export function doubleSha256(data: Uint8Array): Uint8Array<ArrayBuffer>;
+
+// @public
+export interface Ecdsa {
+    // (undocumented)
+    compressPublicKey(uncompressed: Uint8Array): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    decompressPublicKey(compressed: Uint8Array): Uint8Array<ArrayBuffer>;
+    derivePrivateKey(keyMaterial: Uint8Array): Uint8Array<ArrayBuffer>;
+    generatePrivateKey(options?: KeygenOptions): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly MESSAGE_HASH_SIZE: 32;
+    // (undocumented)
+    readonly PRIVATE_KEY_SIZE: 32;
+    // (undocumented)
+    readonly PUBLIC_KEY_SIZE: 33;
+    publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
+    sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly SIGNATURE_SIZE: 64;
+    // (undocumented)
+    readonly UNCOMPRESSED_PUBLIC_KEY_SIZE: 65;
+    verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+}
+
+// @public (undocumented)
+export const ecdsa: Ecdsa;
 
 // @public (undocumented)
 export const ECDSA_MESSAGE_HASH_SIZE = 32;
@@ -66,25 +142,23 @@ export const ECDSA_SIGNATURE_SIZE = 64;
 export const ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE = 65;
 
 // @public
-export function ecdsaCompressPublicKey(uncompressed: Uint8Array): Uint8Array;
+export interface Ed25519 {
+    generatePrivateKey(options?: KeygenOptions): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly PRIVATE_KEY_SIZE: 32;
+    // (undocumented)
+    readonly PUBLIC_KEY_SIZE: 32;
+    // (undocumented)
+    publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly SIGNATURE_SIZE: 64;
+    verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+}
 
-// @public
-export function ecdsaDecompressPublicKey(compressed: Uint8Array): Uint8Array;
-
-// @public
-export function ecdsaDerivePrivateKey(keyMaterial: Uint8Array): Uint8Array;
-
-// @public
-export function ecdsaNewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array;
-
-// @public
-export function ecdsaPublicKeyFromPrivateKey(privateKey: Uint8Array): Uint8Array;
-
-// @public
-export function ecdsaSign(privateKey: Uint8Array, message: Uint8Array): Uint8Array;
-
-// @public
-export function ecdsaVerify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+// @public (undocumented)
+export const ed25519: Ed25519;
 
 // @public (undocumented)
 export const ED25519_PRIVATE_KEY_SIZE = 32;
@@ -96,42 +170,57 @@ export const ED25519_PUBLIC_KEY_SIZE = 32;
 export const ED25519_SIGNATURE_SIZE = 64;
 
 // @public
-export function ed25519NewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array;
+export function hkdfSha256(keyMaterial: Uint8Array, salt: Uint8Array, length: number): Uint8Array<ArrayBuffer>;
 
 // @public
-export function ed25519PublicKeyFromPrivateKey(privateKey: Uint8Array): Uint8Array;
-
-// @public
-export function ed25519Sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array;
-
-// @public
-export function ed25519Verify(publicKey: Uint8Array, message: Uint8Array, signature: Uint8Array): boolean;
+export function hkdfSha512(keyMaterial: Uint8Array, salt: Uint8Array, length: number): Uint8Array<ArrayBuffer>;
 
 // @public (undocumented)
-export namespace hash {
-    export { CRC32_SIZE, SHA256_SIZE, SHA512_SIZE, crc32, crc32Data, crc32DataOpt, doubleSha256, hkdfHmacSha256, hkdfHmacSha512, hmacSha256, hmacSha512, pbkdf2HmacSha256, pbkdf2HmacSha512, sha256, sha512 };
+export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
+
+// @public (undocumented)
+export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
+
+// @public
+export interface KeygenOptions {
+    readonly rng?: RandomNumberGenerator | undefined;
 }
-
-// @public
-export function hkdfHmacSha256(keyMaterial: Uint8Array, salt: Uint8Array, keyLen: number): Uint8Array;
-
-// @public
-export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array;
-
-// @public
-export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array;
 
 // @public
 export function memzero(data: NumericTypedArray): void;
 
 // @public
-export function memzeroVecVecU8(arrays: Uint8Array[]): void;
+export function memzeroAll(arrays: readonly NumericTypedArray[]): void;
 
 // @public
 export type NumericTypedArray = Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array;
 
 // @public
-export function pbkdf2HmacSha256(password: Uint8Array, salt: Uint8Array, iterations: number, keyLen: number): Uint8Array;
+export interface Pbkdf2Options {
+    readonly dkLen: number;
+    // (undocumented)
+    readonly iterations: number;
+}
+
+// @public (undocumented)
+export function pbkdf2Sha256(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
+
+// @public (undocumented)
+export function pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
+
+// @public
+export interface Schnorr {
+    // (undocumented)
+    readonly PUBLIC_KEY_SIZE: 32;
+    publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
+    sign(privateKey: Uint8Array, message: Uint8Array, options?: SchnorrSignOptions): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly SIGNATURE_SIZE: 64;
+    verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
+}
+
+// @public (undocumented)
+export const schnorr: Schnorr;
 
 // @public (undocumented)
 export const SCHNORR_PUBLIC_KEY_SIZE = 32;
@@ -140,34 +229,30 @@ export const SCHNORR_PUBLIC_KEY_SIZE = 32;
 export const SCHNORR_SIGNATURE_SIZE = 64;
 
 // @public
-export function schnorrPublicKeyFromPrivateKey(privateKey: Uint8Array): Uint8Array;
+export interface SchnorrSignOptions {
+    readonly auxRand?: Uint8Array | undefined;
+    readonly rng?: RandomNumberGenerator | undefined;
+}
+
+// @public (undocumented)
+export function scrypt(password: Uint8Array, salt: Uint8Array, options: ScryptOptions): Uint8Array<ArrayBuffer>;
 
 // @public
-export function schnorrSign(ecdsaPrivateKey: Uint8Array, message: Uint8Array): Uint8Array;
+export interface ScryptOptions {
+    readonly dkLen: number;
+    readonly logN?: number | undefined;
+    readonly p?: number | undefined;
+    readonly r?: number | undefined;
+}
 
-// @public
-export function schnorrSignUsing(ecdsaPrivateKey: Uint8Array, message: Uint8Array, rng: RandomNumberGenerator): Uint8Array;
-
-// @public
-export function schnorrSignWithAuxRand(ecdsaPrivateKey: Uint8Array, message: Uint8Array, auxRand: Uint8Array): Uint8Array;
-
-// @public
-export function schnorrVerify(schnorrPublicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
-
-// @public
-export function scrypt(password: Uint8Array, salt: Uint8Array, outputLen: number): Uint8Array;
-
-// @public
-export function scryptOpt(password: Uint8Array, salt: Uint8Array, outputLen: number, logN: number, r: number, p: number): Uint8Array;
-
-// @public
-export function sha256(data: Uint8Array): Uint8Array;
+// @public (undocumented)
+export function sha256(data: Uint8Array): Uint8Array<ArrayBuffer>;
 
 // @public (undocumented)
 export const SHA256_SIZE = 32;
 
-// @public
-export function sha512(data: Uint8Array): Uint8Array;
+// @public (undocumented)
+export function sha512(data: Uint8Array): Uint8Array<ArrayBuffer>;
 
 // @public (undocumented)
 export const SHA512_SIZE = 64;
@@ -181,20 +266,27 @@ export const SYMMETRIC_KEY_SIZE = 32;
 // @public (undocumented)
 export const SYMMETRIC_NONCE_SIZE = 12;
 
+// @public
+export interface X25519 {
+    deriveAgreementPrivateKey(keyMaterial: Uint8Array): Uint8Array<ArrayBuffer>;
+    generatePrivateKey(options?: KeygenOptions): Uint8Array<ArrayBuffer>;
+    // (undocumented)
+    readonly PRIVATE_KEY_SIZE: 32;
+    // (undocumented)
+    readonly PUBLIC_KEY_SIZE: 32;
+    // (undocumented)
+    publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
+    sharedKey(privateKey: Uint8Array, publicKey: Uint8Array): Uint8Array<ArrayBuffer>;
+}
+
+// @public (undocumented)
+export const x25519: X25519;
+
 // @public (undocumented)
 export const X25519_PRIVATE_KEY_SIZE = 32;
 
 // @public (undocumented)
 export const X25519_PUBLIC_KEY_SIZE = 32;
-
-// @public
-export function x25519NewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array;
-
-// @public
-export function x25519PublicKeyFromPrivateKey(privateKey: Uint8Array): Uint8Array;
-
-// @public
-export function x25519SharedKey(x25519Private: Uint8Array, x25519Public: Uint8Array): Uint8Array;
 
 // (No @packageDocumentation comment for this package)
 

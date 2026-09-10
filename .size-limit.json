@@ -3,5 +3,11 @@
     "name": "ESM entry (import *), minified + gzipped",
     "path": "dist/index.mjs",
     "limit": "36 kB"
+  },
+  {
+    "name": "ESM entry, package's own code (noble and rand external)",
+    "path": "dist/index.mjs",
+    "ignore": ["@noble/ciphers", "@noble/curves", "@noble/hashes", "@blockchaincommons/rand"],
+    "limit": "3 kB"
   }
 ]

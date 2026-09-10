@@ -80,17 +80,36 @@ bun add @blockchaincommons/crypto
 
 ```typescript
 import {
-  CryptoError,
-  AeadError,
-  memzero,
-  memzeroVecVecU8,
-  CRC32_SIZE,
-  SHA256_SIZE,
-  SHA512_SIZE,
   sha256,
-  doubleSha256,
-  sha512,
+  hkdfSha256,
+  chacha20Poly1305,
+  ecdsa,
+  schnorr,
+  ed25519,
+  x25519,
+  CryptoError,
 } from "@blockchaincommons/crypto";
+
+// Hashes and KDFs are plain functions.
+const digest = sha256(new TextEncoder().encode("hello"));
+const key = hkdfSha256(digest, new Uint8Array(16), 32);
+
+// Algorithm families are objects; every function that draws randomness
+// takes `{ rng }` and defaults to the secure generator.
+const priv = ecdsa.generatePrivateKey();
+const sig = ecdsa.sign(priv, digest);
+ecdsa.verify(ecdsa.publicKey(priv), sig, digest); // true
+
+// AEAD returns `ciphertext || tag` as one buffer.
+const nonce = new Uint8Array(chacha20Poly1305.NONCE_SIZE);
+const sealed = chacha20Poly1305.encrypt(key, nonce, digest, { aad: new Uint8Array(0) });
+try {
+  chacha20Poly1305.decrypt(key, nonce, sealed);
+} catch (e) {
+  if (CryptoError.isCryptoError(e) && e.code === "AuthenticationFailed") {
+    /* tampered */
+  }
+}
 ```
 
 Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons/bc-crypto-ts/tree/master/examples) directory.
@@ -101,7 +120,7 @@ Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons
 
 ### Version History
 
-- **1.0.0-beta.1 (September 9, 2026)** - Initial beta release, extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts) monorepo.
+- **1.0.0-beta.1 (September 9, 2026)** - Initial beta release, extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts) monorepo and redesigned as an idiomatic TypeScript library ([MIGRATION.md](./MIGRATION.md)). Output bytes are unchanged and cross-validated against `bc-crypto 0.14.0`.
 
 ### Roadmap
 

@@ -12,14 +12,13 @@ describe("aead round-trips and tamper detection", () => {
   it("encrypt/decrypt with and without aad", () => {
     fc.assert(
       fc.property(u8(), key, nonce, u8(64), (pt, k, n, aad) => {
-        const [ct, tag] = c.aeadChaCha20Poly1305EncryptWithAad(pt, k, n, aad);
-        const back = c.aeadChaCha20Poly1305DecryptWithAad(ct, k, n, aad, tag);
-        const [ct2, tag2] = c.aeadChaCha20Poly1305Encrypt(pt, k, n);
+        const sealed = c.chacha20Poly1305.encrypt(k, n, pt, { aad });
+        const back = c.chacha20Poly1305.decrypt(k, n, sealed, { aad });
+        const sealed2 = c.chacha20Poly1305.encrypt(k, n, pt);
         return (
           Buffer.from(back).equals(Buffer.from(pt)) &&
-          Buffer.from(c.aeadChaCha20Poly1305Decrypt(ct2, k, n, tag2)).equals(Buffer.from(pt)) &&
-          ct.length === pt.length &&
-          tag.length === 16
+          Buffer.from(c.chacha20Poly1305.decrypt(k, n, sealed2)).equals(Buffer.from(pt)) &&
+          sealed.length === pt.length + 16
         );
       }),
       { numRuns: 200 },
@@ -28,14 +27,13 @@ describe("aead round-trips and tamper detection", () => {
   it("any flipped bit fails authentication", () => {
     fc.assert(
       fc.property(u8(), key, nonce, fc.nat(), (pt, k, n, i) => {
-        const [ct, tag] = c.aeadChaCha20Poly1305Encrypt(pt, k, n);
-        const all = new Uint8Array([...ct, ...tag]);
+        const all = c.chacha20Poly1305.encrypt(k, n, pt);
         all[i % all.length] ^= 1 << (i % 8);
         try {
-          c.aeadChaCha20Poly1305Decrypt(all.subarray(0, ct.length), k, n, all.subarray(ct.length));
+          c.chacha20Poly1305.decrypt(k, n, all);
           return false;
-        } catch {
-          return true;
+        } catch (e) {
+          return c.CryptoError.isCryptoError(e) && e.code === "AuthenticationFailed";
         }
       }),
       { numRuns: 200 },
@@ -50,8 +48,8 @@ describe("signature round-trips", () => {
   it("ecdsa", () => {
     fc.assert(
       fc.property(priv, u8(), (k, m) => {
-        const pub = c.ecdsaPublicKeyFromPrivateKey(k);
-        return c.ecdsaVerify(pub, c.ecdsaSign(k, m), m);
+        const pub = c.ecdsa.publicKey(k);
+        return c.ecdsa.verify(pub, c.ecdsa.sign(k, m), m);
       }),
       { numRuns: 60 },
     );
@@ -59,8 +57,8 @@ describe("signature round-trips", () => {
   it("schnorr (aux-rand path)", () => {
     fc.assert(
       fc.property(priv, u8(), fc.uint8Array({ minLength: 32, maxLength: 32 }), (k, m, aux) => {
-        const pub = c.schnorrPublicKeyFromPrivateKey(k);
-        return c.schnorrVerify(pub, c.schnorrSignWithAuxRand(k, m, aux), m);
+        const pub = c.schnorr.publicKey(k);
+        return c.schnorr.verify(pub, c.schnorr.sign(k, m, { auxRand: aux }), m);
       }),
       { numRuns: 60 },
     );
@@ -68,8 +66,8 @@ describe("signature round-trips", () => {
   it("ed25519", () => {
     fc.assert(
       fc.property(priv, u8(), (k, m) => {
-        const pub = c.ed25519PublicKeyFromPrivateKey(k);
-        return c.ed25519Verify(pub, m, c.ed25519Sign(k, m));
+        const pub = c.ed25519.publicKey(k);
+        return c.ed25519.verify(pub, c.ed25519.sign(k, m), m);
       }),
       { numRuns: 60 },
     );
@@ -77,9 +75,9 @@ describe("signature round-trips", () => {
   it("x25519 agreement is symmetric", () => {
     fc.assert(
       fc.property(priv, priv, (a, b) => {
-        const A = c.x25519PublicKeyFromPrivateKey(a),
-          B = c.x25519PublicKeyFromPrivateKey(b);
-        return Buffer.from(c.x25519SharedKey(a, B)).equals(Buffer.from(c.x25519SharedKey(b, A)));
+        const A = c.x25519.publicKey(a),
+          B = c.x25519.publicKey(b);
+        return Buffer.from(c.x25519.sharedKey(a, B)).equals(Buffer.from(c.x25519.sharedKey(b, A)));
       }),
       { numRuns: 60 },
     );
@@ -87,8 +85,8 @@ describe("signature round-trips", () => {
   it("ec key compression round-trips", () => {
     fc.assert(
       fc.property(priv, (k) => {
-        const pub = c.ecdsaPublicKeyFromPrivateKey(k);
-        return Buffer.from(c.ecdsaCompressPublicKey(c.ecdsaDecompressPublicKey(pub))).equals(
+        const pub = c.ecdsa.publicKey(k);
+        return Buffer.from(c.ecdsa.compressPublicKey(c.ecdsa.decompressPublicKey(pub))).equals(
           Buffer.from(pub),
         );
       }),

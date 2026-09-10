@@ -7,3 +7,4 @@ scripts
 *.md
 *.json
 LICENSE
+tests/baseline

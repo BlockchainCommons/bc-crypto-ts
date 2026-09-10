@@ -36,9 +36,9 @@ describe("golden: hashes", () => {
         hex(c.sha256(d)),
         hex(c.doubleSha256(d)),
         hex(c.sha512(d)),
-        c.hash.crc32(d),
-        hex(c.hash.crc32Data(d)),
-        hex(c.hash.crc32DataOpt(d, true)),
+        c.crc32(d),
+        hex(c.crc32Bytes(d)),
+        hex(c.crc32Bytes(d, { littleEndian: true })),
       ]).toMatchSnapshot();
     });
     it(`hmac (${n})`, () => {
@@ -47,19 +47,19 @@ describe("golden: hashes", () => {
   }
   it("pbkdf2 / hkdf", () => {
     expect([
-      hex(c.pbkdf2HmacSha256(text("password"), SALT, 1000, 32)),
-      hex(c.hash.pbkdf2HmacSha512(text("password"), SALT, 100, 64)),
-      hex(c.hkdfHmacSha256(KEY, SALT, 32)),
-      hex(c.hkdfHmacSha256(KEY, SALT, 16)),
-      hex(c.hkdfHmacSha256(KEY, SALT, 64)),
-      hex(c.hash.hkdfHmacSha512(KEY, SALT, 64)),
+      hex(c.pbkdf2Sha256(text("password"), SALT, { iterations: 1000, dkLen: 32 })),
+      hex(c.pbkdf2Sha512(text("password"), SALT, { iterations: 100, dkLen: 64 })),
+      hex(c.hkdfSha256(KEY, SALT, 32)),
+      hex(c.hkdfSha256(KEY, SALT, 16)),
+      hex(c.hkdfSha256(KEY, SALT, 64)),
+      hex(c.hkdfSha512(KEY, SALT, 64)),
     ]).toMatchSnapshot();
   });
   it("scrypt / argon2id (defaults and custom)", () => {
     expect([
-      hex(c.scrypt(text("pw"), SALT, 32)),
-      hex(c.scryptOpt(text("pw"), SALT, 32, 2, 8, 1)),
-      hex(c.argon2id(text("pw"), SALT, 32)),
+      hex(c.scrypt(text("pw"), SALT, { dkLen: 32 })),
+      hex(c.scrypt(text("pw"), SALT, { dkLen: 32, logN: 2, r: 8, p: 1 })),
+      hex(c.argon2id(text("pw"), SALT, { dkLen: 32 })),
     ]).toMatchSnapshot();
   });
 });
@@ -67,19 +67,24 @@ describe("golden: hashes", () => {
 describe("golden: symmetric", () => {
   for (const [n, d] of INPUTS) {
     it(`chacha20poly1305 (${n})`, () => {
-      const [ct, tag] = c.aeadChaCha20Poly1305Encrypt(d, KEY, NONCE);
-      const [ctA, tagA] = c.aeadChaCha20Poly1305EncryptWithAad(d, KEY, NONCE, AAD);
-      expect([hex(ct), hex(tag), hex(ctA), hex(tagA)]).toMatchSnapshot();
-      expect(hex(c.aeadChaCha20Poly1305Decrypt(ct, KEY, NONCE, tag))).toBe(hex(d));
-      expect(hex(c.aeadChaCha20Poly1305DecryptWithAad(ctA, KEY, NONCE, AAD, tagA))).toBe(hex(d));
+      // Snapshot layout is [ct, tag, ctA, tagA] from the pre-redesign tuple API.
+      const sealed = c.chacha20Poly1305.encrypt(KEY, NONCE, d);
+      const sealedA = c.chacha20Poly1305.encrypt(KEY, NONCE, d, { aad: AAD });
+      const split = (s: Uint8Array) => [
+        hex(s.subarray(0, s.length - 16)),
+        hex(s.subarray(s.length - 16)),
+      ];
+      expect([...split(sealed), ...split(sealedA)]).toMatchSnapshot();
+      expect(hex(c.chacha20Poly1305.decrypt(KEY, NONCE, sealed))).toBe(hex(d));
+      expect(hex(c.chacha20Poly1305.decrypt(KEY, NONCE, sealedA, { aad: AAD }))).toBe(hex(d));
     });
   }
   it("rejects a tampered tag", () => {
-    const [ct, tag] = c.aeadChaCha20Poly1305Encrypt(bytes(20), KEY, NONCE);
-    tag[0] ^= 1;
+    const sealed = c.chacha20Poly1305.encrypt(KEY, NONCE, bytes(20));
+    sealed[20] ^= 1;
     let name = "";
     try {
-      c.aeadChaCha20Poly1305Decrypt(ct, KEY, NONCE, tag);
+      c.chacha20Poly1305.decrypt(KEY, NONCE, sealed);
     } catch (e) {
       name = (e as Error).name;
     }
@@ -89,52 +94,52 @@ describe("golden: symmetric", () => {
 
 describe("golden: keys and signatures", () => {
   it("x25519", () => {
-    const pub = c.x25519PublicKeyFromPrivateKey(PRIV);
-    const other = c.x25519PublicKeyFromPrivateKey(bytes(32, 0x40));
+    const pub = c.x25519.publicKey(PRIV);
+    const other = c.x25519.publicKey(bytes(32, 0x40));
     expect([
       hex(pub),
-      hex(c.x25519SharedKey(PRIV, other)),
-      hex(c.deriveAgreementPrivateKey(KEY)),
+      hex(c.x25519.sharedKey(PRIV, other)),
+      hex(c.x25519.deriveAgreementPrivateKey(KEY)),
       hex(c.deriveSigningPrivateKey(KEY)),
-      hex(c.x25519NewPrivateKeyUsing(SeededRng.forTesting())),
+      hex(c.x25519.generatePrivateKey({ rng: SeededRng.forTesting() })),
     ]).toMatchSnapshot();
   });
   it("ecdsa / schnorr", () => {
-    const pub = c.ecdsaPublicKeyFromPrivateKey(PRIV);
-    const un = c.ecdsaDecompressPublicKey(pub);
+    const pub = c.ecdsa.publicKey(PRIV);
+    const un = c.ecdsa.decompressPublicKey(pub);
     const msg = text("message");
     expect([
       hex(pub),
       hex(un),
-      hex(c.ecdsaCompressPublicKey(un)),
-      hex(c.ecdsaDerivePrivateKey(KEY)),
-      hex(c.schnorrPublicKeyFromPrivateKey(PRIV)),
-      hex(c.ecdsaSign(PRIV, msg)),
-      c.ecdsaVerify(pub, c.ecdsaSign(PRIV, msg), msg),
-      hex(c.schnorrSignWithAuxRand(PRIV, msg, bytes(32, 0x77))),
-      hex(c.schnorrSignUsing(PRIV, msg, SeededRng.forTesting())),
-      hex(c.ecdsaNewPrivateKeyUsing(SeededRng.forTesting())),
+      hex(c.ecdsa.compressPublicKey(un)),
+      hex(c.ecdsa.derivePrivateKey(KEY)),
+      hex(c.schnorr.publicKey(PRIV)),
+      hex(c.ecdsa.sign(PRIV, msg)),
+      c.ecdsa.verify(pub, c.ecdsa.sign(PRIV, msg), msg),
+      hex(c.schnorr.sign(PRIV, msg, { auxRand: bytes(32, 0x77) })),
+      hex(c.schnorr.sign(PRIV, msg, { rng: SeededRng.forTesting() })),
+      hex(c.ecdsa.generatePrivateKey({ rng: SeededRng.forTesting() })),
     ]).toMatchSnapshot();
   });
   it("ed25519", () => {
-    const pub = c.ed25519PublicKeyFromPrivateKey(PRIV);
+    const pub = c.ed25519.publicKey(PRIV);
     const msg = text("message");
-    const sig = c.ed25519Sign(PRIV, msg);
+    const sig = c.ed25519.sign(PRIV, msg);
     expect([
       hex(pub),
       hex(sig),
-      c.ed25519Verify(pub, msg, sig),
-      hex(c.ed25519NewPrivateKeyUsing(SeededRng.forTesting())),
+      c.ed25519.verify(pub, sig, msg),
+      hex(c.ed25519.generatePrivateKey({ rng: SeededRng.forTesting() })),
     ]).toMatchSnapshot();
   });
   it("size errors", () => {
     const short = bytes(31);
     const names: string[] = [];
     for (const f of [
-      () => c.ecdsaPublicKeyFromPrivateKey(short),
-      () => c.ed25519PublicKeyFromPrivateKey(short),
-      () => c.x25519PublicKeyFromPrivateKey(short),
-      () => c.ecdsaSign(short, short),
+      () => c.ecdsa.publicKey(short),
+      () => c.ed25519.publicKey(short),
+      () => c.x25519.publicKey(short),
+      () => c.ecdsa.sign(short, short),
     ]) {
       try {
         f();
@@ -149,7 +154,7 @@ describe("golden: keys and signatures", () => {
     const a = bytes(8);
     c.memzero(a);
     const arrs = [bytes(4), bytes(4, 9)];
-    c.memzeroVecVecU8(arrs);
+    c.memzeroAll(arrs);
     expect([
       hex(a),
       arrs.map(hex),
