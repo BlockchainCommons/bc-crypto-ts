@@ -1,0 +1,8 @@
+# Version map: TypeScript package -> Reference implementation
+# Used by workflow automation to track upstream reference versions.
+packages:
+  crypto:
+    npm: "@blockchaincommons/crypto"
+    repo: "BlockchainCommons/bc-crypto-rust"
+    version: "0.14.0"
+    commit: "4f2b791320730578b04943c833c4a9e6c232fc4d"
