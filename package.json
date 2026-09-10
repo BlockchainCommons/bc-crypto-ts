@@ -58,7 +58,11 @@
     "postinstall": "node scripts/pin-lint-typescript.mjs",
     "prepublishOnly": "npm run build",
     "lint:pkg": "publint && attw --pack . --profile node16",
-    "check:deps": "node scripts/check-deps.mjs"
+    "check:deps": "node scripts/check-deps.mjs",
+    "vectors:generate": "bun scripts/generate-vectors.mjs",
+    "test:golden": "vitest run tests/golden-vectors.test.ts",
+    "test:differential": "vitest run tests/differential.test.ts",
+    "baseline:build": "bun scripts/build-baseline.mjs"
   },
   "keywords": [
     "crypto",
@@ -86,6 +90,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "ajv": "^8.20.0",
     "eslint": "^10.7.0",
+    "fast-check": "^4.9.0",
     "prettier": "3.9.6",
     "publint": "^0.3.21",
     "size-limit": "^13.0.3",

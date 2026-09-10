@@ -7,7 +7,7 @@
 // Ported from bc-crypto-rust/src/ecdsa_keys.rs
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, randomBytes } from "@blockchaincommons/rand";
 import { hkdfHmacSha256 } from "./hash.js";
 
 // Constants
@@ -26,7 +26,7 @@ export const SCHNORR_PUBLIC_KEY_SIZE = 32; // x-only
  * the key is used.
  */
 export function ecdsaNewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array {
-  return rng.randomData(ECDSA_PRIVATE_KEY_SIZE);
+  return randomBytes(ECDSA_PRIVATE_KEY_SIZE, { rng });
 }
 
 /**

@@ -7,7 +7,7 @@
 // Ported from bc-crypto-rust/src/ed25519_signing.rs
 
 import { ed25519 } from "@noble/curves/ed25519.js";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, randomBytes } from "@blockchaincommons/rand";
 
 // Constants
 export const ED25519_PUBLIC_KEY_SIZE = 32;
@@ -18,7 +18,7 @@ export const ED25519_SIGNATURE_SIZE = 64;
  * Generate a new random Ed25519 private key.
  */
 export function ed25519NewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array {
-  return rng.randomData(ED25519_PRIVATE_KEY_SIZE);
+  return randomBytes(ED25519_PRIVATE_KEY_SIZE, { rng });
 }
 
 /**

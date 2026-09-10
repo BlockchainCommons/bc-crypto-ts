@@ -47,11 +47,7 @@ import {
   // Memzero
   memzero,
 } from "../src/index.js";
-import {
-  SecureRandomNumberGenerator,
-  makeFakeRandomNumberGenerator,
-  fakeRandomData,
-} from "@blockchaincommons/rand";
+import { SecureRng, SeededRng, randomBytes, testRandomBytes } from "@blockchaincommons/rand";
 
 const { crc32, crc32Data, crc32DataOpt } = hash;
 
@@ -182,9 +178,9 @@ describe("Symmetric encryption", () => {
   });
 
   test("test_random_key_and_nonce", () => {
-    const rng = new SecureRandomNumberGenerator();
-    const key = rng.randomData(32);
-    const nonce = rng.randomData(12);
+    const rng = new SecureRng();
+    const key = randomBytes(32, { rng });
+    const nonce = randomBytes(12, { rng });
     const plaintext = new TextEncoder().encode("Hello, World!");
 
     const [ciphertext, authTag] = aeadChaCha20Poly1305Encrypt(plaintext, key, nonce);
@@ -209,7 +205,7 @@ describe("Symmetric encryption", () => {
 
 describe("X25519 Key Agreement", () => {
   test("test_x25519_keys", () => {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = new SecureRng();
     const privateKey = x25519NewPrivateKeyUsing(rng);
     expect(privateKey.length).toBe(32);
 
@@ -218,7 +214,7 @@ describe("X25519 Key Agreement", () => {
   });
 
   test("test_key_agreement", () => {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = new SecureRng();
 
     // Alice's keys
     const alicePrivate = x25519NewPrivateKeyUsing(rng);
@@ -237,7 +233,7 @@ describe("X25519 Key Agreement", () => {
 
   // Cross-platform test vector from Rust bc-crypto implementation
   test("test_key_agreement_cross_platform", () => {
-    const rng = makeFakeRandomNumberGenerator();
+    const rng = SeededRng.forTesting();
 
     // Alice's keys (deterministic from fake RNG)
     const alicePrivate = x25519NewPrivateKeyUsing(rng);
@@ -285,7 +281,7 @@ describe("X25519 Key Agreement", () => {
 
 describe("ECDSA", () => {
   test("test_ecdsa_keys", () => {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = new SecureRng();
     const privateKey = ecdsaNewPrivateKeyUsing(rng);
     expect(privateKey.length).toBe(32);
 
@@ -300,7 +296,7 @@ describe("ECDSA", () => {
   });
 
   test("test_ecdsa_signing", () => {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = new SecureRng();
     const privateKey = ecdsaNewPrivateKeyUsing(rng);
     const publicKey = ecdsaPublicKeyFromPrivateKey(privateKey);
     const message = new TextEncoder().encode("Hello, World!");
@@ -323,7 +319,7 @@ describe("ECDSA", () => {
       "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it.",
     );
 
-    const rng = makeFakeRandomNumberGenerator();
+    const rng = SeededRng.forTesting();
     const privateKey = ecdsaNewPrivateKeyUsing(rng);
     const publicKey = ecdsaPublicKeyFromPrivateKey(privateKey);
     const signature = ecdsaSign(privateKey, MESSAGE);
@@ -343,7 +339,7 @@ describe("Schnorr", () => {
   // private-key derivation and the auxiliary randomness, then asserts
   // the byte-identical signature.
   test("test_schnorr_sign (deterministic, matches Rust)", () => {
-    const rng = makeFakeRandomNumberGenerator();
+    const rng = SeededRng.forTesting();
     const privateKey = ecdsaNewPrivateKeyUsing(rng);
     expect(bytesToHex(privateKey)).toBe(
       "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
@@ -361,7 +357,7 @@ describe("Schnorr", () => {
   });
 
   test("schnorrSign roundtrips with secure RNG", () => {
-    const privateKey = ecdsaNewPrivateKeyUsing(new SecureRandomNumberGenerator());
+    const privateKey = ecdsaNewPrivateKeyUsing(new SecureRng());
     const publicKey = schnorrPublicKeyFromPrivateKey(privateKey);
     expect(publicKey.length).toBe(32);
 
@@ -718,7 +714,7 @@ describe("Ed25519", () => {
         "one tip for the future, sunscreen would be it.",
     );
 
-    const privateKey = fakeRandomData(32);
+    const privateKey = testRandomBytes(32);
     expect(bytesToHex(privateKey)).toBe(
       "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
     );
@@ -737,7 +733,7 @@ describe("Ed25519", () => {
   });
 
   test("ed25519 roundtrips with secure RNG", () => {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = new SecureRng();
     const privateKey = ed25519NewPrivateKeyUsing(rng);
     expect(privateKey.length).toBe(32);
 

@@ -7,7 +7,7 @@
 // Ported from bc-crypto-rust/src/public_key_encryption.rs
 
 import { x25519 } from "@noble/curves/ed25519.js";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, randomBytes } from "@blockchaincommons/rand";
 import { hkdfHmacSha256 } from "./hash.js";
 
 // Constants
@@ -38,7 +38,7 @@ export function deriveSigningPrivateKey(keyMaterial: Uint8Array): Uint8Array {
  * Generate a new random X25519 private key.
  */
 export function x25519NewPrivateKeyUsing(rng: RandomNumberGenerator): Uint8Array {
-  return rng.randomData(X25519_PRIVATE_KEY_SIZE);
+  return randomBytes(X25519_PRIVATE_KEY_SIZE, { rng });
 }
 
 /**

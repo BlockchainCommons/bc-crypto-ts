@@ -7,8 +7,7 @@
 // Ported from bc-crypto-rust/src/schnorr_signing.rs
 
 import { schnorr } from "@noble/curves/secp256k1.js";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, randomBytes, secureRng } from "@blockchaincommons/rand";
 import { ECDSA_PRIVATE_KEY_SIZE, SCHNORR_PUBLIC_KEY_SIZE } from "./ecdsa-keys.js";
 
 // Constants
@@ -23,7 +22,7 @@ export const SCHNORR_SIGNATURE_SIZE = 64;
  * @returns 64-byte Schnorr signature
  */
 export function schnorrSign(ecdsaPrivateKey: Uint8Array, message: Uint8Array): Uint8Array {
-  const rng = new SecureRandomNumberGenerator();
+  const rng = secureRng();
   return schnorrSignUsing(ecdsaPrivateKey, message, rng);
 }
 
@@ -40,7 +39,7 @@ export function schnorrSignUsing(
   message: Uint8Array,
   rng: RandomNumberGenerator,
 ): Uint8Array {
-  const auxRand = rng.randomData(32);
+  const auxRand = randomBytes(32, { rng });
   return schnorrSignWithAuxRand(ecdsaPrivateKey, message, auxRand);
 }
 
