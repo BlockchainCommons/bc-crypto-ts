@@ -1,0 +1,401 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden: freeze additions (B1–B5) > B1: ed25519.verify on a small-order key / non-canonical encodings (today: true) 1`] = `
+[
+  "false",
+  "false",
+  "false",
+]
+`;
+
+exports[`golden: freeze additions (B1–B5) > B2: x25519.sharedKey with a low-order public key (today: noble's Error) 1`] = `
+[
+  "throw:CryptoError:low-order point",
+  "throw:CryptoError:low-order point",
+]
+`;
+
+exports[`golden: freeze additions (B1–B5) > B3: verify on malformed keys and signatures of the right length (today: false) 1`] = `
+[
+  "false",
+  "false",
+  "false",
+  "false",
+  "false",
+  "false",
+]
+`;
+
+exports[`golden: freeze additions (B1–B5) > B4: faults that escape CryptoError (today: noble's own errors) 1`] = `
+{
+  "argon2id dkLen 3": "throw:CryptoError:argon2id dkLen must be an integer in [4, 4294967295], got 3",
+  "argon2id salt 4": "throw:CryptoError:argon2id salt must be at least 8 bytes, got 4",
+  "argon2id t 0": "throw:CryptoError:argon2id t must be an integer in [1, 4294967295], got 0",
+  "chacha20 counter -1": "throw:CryptoError:ChaCha20 counter must be an integer in [0, 4294967295], got -1",
+  "ecdsa.compressPublicKey(04‖01*64)": "throw:CryptoError:ECDSA uncompressed public key is not a point on the curve",
+  "ecdsa.decompressPublicKey(02‖ff*32)": "throw:CryptoError:ECDSA compressed public key is not a point on the curve",
+  "ecdsa.publicKey(0)": "throw:CryptoError:ECDSA private key is not a valid scalar (must be in [1, n - 1])",
+  "ecdsa.publicKey(n)": "throw:CryptoError:ECDSA private key is not a valid scalar (must be in [1, n - 1])",
+  "ecdsa.sign(0)": "throw:CryptoError:ECDSA private key is not a valid scalar (must be in [1, n - 1])",
+  "hkdfSha256 length 1.5": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 1.5",
+  "hkdfSha256 length 8161": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 8161",
+  "pbkdf2Sha256 dkLen 0": "throw:CryptoError:pbkdf2 dkLen must be an integer in [1, 4294967295], got 0",
+  "pbkdf2Sha256 iterations 0": "throw:CryptoError:pbkdf2 iterations must be an integer in [1, 4294967295], got 0",
+  "schnorr.publicKey(0)": "throw:CryptoError:Schnorr private key is not a valid scalar (must be in [1, n - 1])",
+  "scrypt dkLen 0": "throw:CryptoError:scrypt dkLen must be an integer in [1, 4294967295], got 0",
+  "scrypt logN 0": "throw:CryptoError:scrypt logN must be an integer in [1, 63], got 0",
+  "scrypt r 1.5": "throw:CryptoError:scrypt r must be an integer in [1, 4294967295], got 1.5",
+}
+`;
+
+exports[`golden: freeze additions (B1–B5) > B5: scrypt output length below the reference's opt bound (today: accepted) 1`] = `
+[
+  "2423a4ae53f6581a",
+  "8685bd02e2cada6a",
+]
+`;
+
+exports[`golden: hashes > hmac (1) 1`] = `
+[
+  "a86ce6b2ab762e74d14bf0329723c70e6a409252ae7feb1b8108da3d782d9b66",
+  "576563b3580d657781a5469ad33b89368bae677b24e49af8c0086165b761667ca7d225d7542a2adc4bee7af6cd0f2d26b8f12abeb1831a0e903be2bb3b00ad32",
+]
+`;
+
+exports[`golden: hashes > hmac (31) 1`] = `
+[
+  "99709aa0d10d790c9de3a665bb088ddf3785b6b0298d123d03905f4c3a6c3f30",
+  "f62e7544dcccb902ca4fb0e403a33f56af1a317bf9d7f72b74b4ed260a6d455284285baecf00a75f29d13672e174ce6f6951aba84a22443c611dda6c6ed0c6e8",
+]
+`;
+
+exports[`golden: hashes > hmac (32) 1`] = `
+[
+  "3dba9ce7b37931cdb631d1fc48a4ff9efd4c7af090a8658433c6df65f58be639",
+  "758b516a9cc3dcdd91a0512b779336ecf6b9655bc70dfac4644c03df9dec13299d60b9ab6de5c97151db599287bd92273f130479a10704af2009bacbbd7b0135",
+]
+`;
+
+exports[`golden: hashes > hmac (33) 1`] = `
+[
+  "83b39c3453475c712e0368b4787a73fd5bc18a96dc2ebde4c81e58bd61ea067d",
+  "f6876d95a0511b70da9050c8b6da7ce924763b6ff98b07972e1be80cb259cb63316cf02949c7611368977b0da355e068af9e5de5b41a8a5d9f85967a9a664c24",
+]
+`;
+
+exports[`golden: hashes > hmac (63) 1`] = `
+[
+  "f174d9e0e3393b31007f690d988e58e87d7e5063348db43d3b5a72f408cd91b1",
+  "cc605ea004facb1c711ef0cfd12e8e9a151ce8a1025b43527241ca96cc57edba00b1147bc9bb0c8ca7722a4ebd602f5a08d233a9643851483d3d781fce917ed8",
+]
+`;
+
+exports[`golden: hashes > hmac (64) 1`] = `
+[
+  "97468fc9e3e44a6cfab00ec181ca837fecbedec5f940ee6411b016cf0b675d7c",
+  "d1262094399be053e8fd313e863b73ec9ea015d5efd605efa8076115958e1b0cbd3b74063e65faa5e96352dab34692336bfd0d6a0f40ed38da7713384c3f3c11",
+]
+`;
+
+exports[`golden: hashes > hmac (65) 1`] = `
+[
+  "5086945ee763348d32775225b43344b9ebe53fa00bb6bf7ddf395d58e1ad9301",
+  "47793b62aee75bca897d384f8f5a20a08458e28835f660e9b9c8eb7bdcb983795f6502bc61642d15e191deab895490103501d8c67fa03e78a533b515df2b847e",
+]
+`;
+
+exports[`golden: hashes > hmac (1024) 1`] = `
+[
+  "d811adf222051d16e10ad29b5c13d46a0869582561484139c011cc74759c8a41",
+  "9d18684f1058f9fb46a2292bd17e67e22d9dbf98e7fcfed45dbbcc515c2021341d6ccee7123ce174e4de78698ee524135489493f1b0f5094d009041de55e3a4c",
+]
+`;
+
+exports[`golden: hashes > hmac (empty) 1`] = `
+[
+  "c6551863a07016a8492dbf95c2fe89046d6135cdab02cbe24c8bd47cd30e2b80",
+  "10fd5e7cfdbc120cb3a014aa5a627c41c08165a759ff9d6733f7536c791cd5cd5140f32549e4cb84df2ab9ee81eefdc213944aabac064c518d892306f832fd93",
+]
+`;
+
+exports[`golden: hashes > hmac (hello) 1`] = `
+[
+  "6018991267321cd62a5995bf7e6f00dff4b0db3970e5393a92a180a17ac62a06",
+  "863b3042af26b0624979a73de891136d8fbbabb774244b2e876aff34c9c1efd67305ba01e93489a0b9ad0a2d6a28518c4e60e5f6fae18ec3cd57c85f613b1b03",
+]
+`;
+
+exports[`golden: hashes > pbkdf2 / hkdf 1`] = `
+[
+  "948613aad369dca8e1a735acae336231a8ad8e8b1256fe772a8830927686a98c",
+  "f23335841d6e9bee13e18719ecd554776c4d840e749d76eccabfff6db022948fc9eb2efa79cf98c4ef09a240f835bf8901fa74ea653b17cc945c1b07bce84d50",
+  "bd2ffafe959ccbbeac71ceafdb46b55158cc1bef9b26242859446d850bb8b465",
+  "bd2ffafe959ccbbeac71ceafdb46b551",
+  "bd2ffafe959ccbbeac71ceafdb46b55158cc1bef9b26242859446d850bb8b4652f3b13e26fff8c5fed86b7dd16154ef41833d9af4889487194e9a1459da1df34",
+  "5c2283ac937cf43d96de08f0b542cc7e3347591adbfd0f728eceb16dd40668bed04d6bdc2fd97d98892f1f32c1f9d7948bed9816a12174901bd6c8c7e7cf535c",
+]
+`;
+
+exports[`golden: hashes > scrypt / argon2id (defaults and custom) 1`] = `
+[
+  "8685bd02e2cada6ab86038b7c1f6e5479d8d4d14a9838391066169fa3a46de12",
+  "bd9bda3994a62182fdd2b2c81e12649c7bd71bfbc98e7b15d900f61e50608230",
+  "3056932880d8586aab19fc9de2fe2361a14101cac03249d3b1c003d755571564",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (1) 1`] = `
+[
+  "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+  "1406e05881e299367766d313e26c05564ec91bf721d31726bd6e46e60689539a",
+  "b8244d028981d693af7b456af8efa4cad63d282e19ff14942c246e50d9351d22704a802a71c3580b6370de4ceb293c324a8423342557d4e5c38438f0e36910ee",
+  3523407757,
+  "d202ef8d",
+  "8def02d2",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (31) 1`] = `
+[
+  "4f23c2ca8c5c962e50cd31e221bfb6d0adca19111dca8e0c62598ff146dd19c4",
+  "6dd57794b4219400faefe599f94245db9717940107458ba302e44776ad4a6472",
+  "0674a3cdf5f7c18c1b7524c87c36037f3d0267512d11e052f453dbc097cfd52bc331950880cf904656c70758b2e25e21fe2c7e0462e861112a2dc9d0636bbafc",
+  1299737975,
+  "4d786d77",
+  "776d784d",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (32) 1`] = `
+[
+  "630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+  "2f287b4d3d4910f6cada9e1bd1b4648099e8c52c81aa4a6aebfa6fc86f19834e",
+  "3d94eea49c580aef816935762be049559d6d1440dede12e6a125f1841fff8e6fa9d71862a3e5746b571be3d187b0041046f52ebd850c7cbd5fde8ee38473b649",
+  2435219082,
+  "91267e8a",
+  "8a7e2691",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (33) 1`] = `
+[
+  "5d8fcfefa9aeeb711fb8ed1e4b7d5c8a9bafa46e8e76e68aa18adce5a10df6ab",
+  "240c77492ba62ab011374a7438a4ee6e393ff06865bcb117c60c8b5234ffa0e3",
+  "301f1cd7b25b097ae4c79a97e92bce359d1289f6754e76b71e7617a06e7783a3cc30f5290209bda3e6af239d0dc0f3d1cd4c5e866f4c5c3209eabbd7aafb8058",
+  3834675973,
+  "e4908305",
+  "058390e4",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (63) 1`] = `
+[
+  "29af2686fd53374a36b0846694cc342177e428d1647515f078784d69cdb9e488",
+  "c1087ed239d6ae44b073a10e689044fe21d12c551dff2797a1c753c0ac01d1f9",
+  "9dc9c5598e55dc42955695320839788e353f1d7f6ba74df74c80a8a52f463c0697f57f68835d1418f4ce9b6530cd79bd0f4c6f7e13c93feb1218c0b65c2c0561",
+  3688801923,
+  "dbdea683",
+  "83a6dedb",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (64) 1`] = `
+[
+  "fdeab9acf3710362bd2658cdc9a29e8f9c757fcf9811603a8c447cd1d9151108",
+  "01c9f464780a1b6af4eb400fe2f2896cfb2169f5a65701439e4c2c4e213903ef",
+  "ee4320ebaf3fdb4f2c832b137200c08e235e0fa7bbd0eb1740c7063ba8a0d151da77e003398e1714a955d475b05e3e950b639503b452ec185de4229bc4873949",
+  269405836,
+  "100ece8c",
+  "8cce0e10",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (65) 1`] = `
+[
+  "4bfd2c8b6f1eec7a2afeb48b934ee4b2694182027e6d0fc075074f2fabb31781",
+  "e0a2a044b3c767777c233388f8b38da79d1bcbc6da78f4218eeb1cdf8877f8c7",
+  "02856cef735f9acec6b9e33f0fbc8f9804d2aa54187f382b8ae842e5d3696c07459aad2a5aed25ea5e117eb1c7ba35da6a7a8adce9e6afe3ad79e9fa42d5bba8",
+  1086353368,
+  "40c06fd8",
+  "d86fc040",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (1024) 1`] = `
+[
+  "a6224c1a6cc3b78472f9ef582ac8325b82b4f52ffc2a17bcaac968abbbfa7d5e",
+  "a2801c275a75dff512c5222b67c559490a5b058ecce279b79f404913ba56c479",
+  "67f15f84d54bf7e1ad1ad5b3a792d5ebd598620e81f48540a2b48c0e7d00cede6ec03b548f28402281edd803de4856ecce27cfc3a8d89d7206343607dbca468d",
+  1237864514,
+  "49c85042",
+  "4250c849",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (empty) 1`] = `
+[
+  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456",
+  "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+  0,
+  "00000000",
+  "00000000",
+]
+`;
+
+exports[`golden: hashes > sha256/sha512/double/crc32 (hello) 1`] = `
+[
+  "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+  "bc62d4b80d9e36da29c16c5d4d9f11731f36052c72401a76c23c0fb5a9b74423",
+  "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f",
+  222957957,
+  "0d4a1185",
+  "85114a0d",
+]
+`;
+
+exports[`golden: keys and signatures > ecdsa / schnorr 1`] = `
+[
+  "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0",
+  "0484bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b08cc43d63b2859d469fee15f31c9edb5324266e6fd0407e87382d60fc4511acd8",
+  "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0",
+  "15cef6bfdf2127ddfefb4fbd8392bd18ce12d9c03fc81a8348c123e33aec25e8",
+  "84bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0",
+  "08c8499dcb721f04493903d29c833e7ccbfc6c0384a709e3c843702505f9fd0359ca8136c4c071f7817540883423b8454cb48b80509671abfc7d9be220120d57",
+  true,
+  "145a1d2bcb33afcf4b7c170c3240f360d168652f9dc2dd737f630bce201b68ad5bcf57c2b8f4a17c9ceb3eebfbf6321be9b5953f3e74f4c5e24343851387b58f",
+  "b3266447b9ef7ec62dde3b48ff1739ceba12285ec3fa32ec8217cd6444bd1cad438ab32514cb636699152ae0d1894a5c16b60341eaa640dfc793442ded0bfbbc",
+  "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
+]
+`;
+
+exports[`golden: keys and signatures > ed25519 1`] = `
+[
+  "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664",
+  "2589970d73cbdf923fd51e1259d786542f38a31534380fbdc0ebe13e8518c5395f95c4a111b992969f9b28fc72c2e549f8773ce51768ddcbad0ef6251b791806",
+  true,
+  "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
+]
+`;
+
+exports[`golden: keys and signatures > memzero 1`] = `
+[
+  "0000000000000000",
+  [
+    "00000000",
+    "00000000",
+  ],
+  "7eb559bb",
+]
+`;
+
+exports[`golden: keys and signatures > size errors 1`] = `
+[
+  "CryptoError: ECDSA private key must be 32 bytes, got 31",
+  "CryptoError: Ed25519 private key must be 32 bytes, got 31",
+  "CryptoError: X25519 private key must be 32 bytes, got 31",
+  "CryptoError: ECDSA private key must be 32 bytes, got 31",
+]
+`;
+
+exports[`golden: keys and signatures > x25519 1`] = `
+[
+  "07a37cbc142093c8b755dc1b10e86cb426374ad16aa853ed0bdfc0b2b86d1c7c",
+  "7cd37fd7f9cb30aa95ffce1310a3d10b0851baafade0d6b7a24a2b0506c4ea40",
+  "38a1747591b52bde758da822e2dc49e58a8b56bd3ebe81ca2e4c1bea88424790",
+  "15cef6bfdf2127ddfefb4fbd8392bd18ce12d9c03fc81a8348c123e33aec25e8",
+  "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (1) 1`] = `
+[
+  "10",
+  "e1c8c6fdada513623bc81066b7b5776c",
+  "10",
+  "0283d1051f140ed698917002e854f8b1",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (31) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c",
+  "4362a6d17694ca7d5aba9ccaebe8f969",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c",
+  "6c9fbc04cbc7dbf6c0d8c1d9b0c6fc4b",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (32) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d",
+  "074b59150832b92f601846acb8758d40",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d",
+  "2b886f485c65caa8c6366bbb7d539022",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (33) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75",
+  "03acbd1be1d6fcd1bcd4612ec54aa093",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75",
+  "c6ca32e18d5daae2270886fc5014d575",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (63) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df16",
+  "293e983b10e38f841cf99da99d3bc35a",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df16",
+  "82ccfb2c29420c239a6d159dbe5418bb",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (64) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df1602",
+  "456b3fc8a61180a5e6e57a27f62af396",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df1602",
+  "9ef9a2b9bf70fc43645af21a174448f7",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (65) 1`] = `
+[
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df160277",
+  "9f47aab802f3d51a764674405bee4934",
+  "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df160277",
+  "05bef98e1169e7046e51a183e143eaaf",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (1024) 1`] = `
+[
+  "1754d3505aebc890f74ad35bfac1888a4ca74aa3c703f1a2913cfe4a7ad3272472dce6c89f764517547c0be5a3766b071cf9a1dcc2a5e11078b946be5aa66d7b70739cb1ea331c853ce4bb919bd900dfaa16bd89c67feef8de11850afa384b642f151bd8d44995060b56628cee5a9a56b84b987fe0b318d51c0b8b80280919f739913af7b434e952d5c80fe175799a1285ef35b4fb3dce825e301524c3ac169619bb9796602021a56d0f66fcbda62acbf436af67afd54353e85fb07bfaf7f45719d7473950dd385aec32d6959df84fa0a335ed00864d335bf750482be022a75f6b7a2e7367e175ba953e1c3b5311018aae47180cf24661c5b725cef302497d383b355ef8088b891d965051219543b60bee7f6e482bee23a386a7c7665fa47695b2dfc1ca5b4cb60276424f979d1283fee16d55e767e730b758957adcb5261ef610855ea012082a4733ae357613d336afe439d6ebdcd2583e46e7319f6376b501ba54b3dc1dc6c57c4cefb2fb3c22577a6be267601ec30b0944840e3dfd2d695ecfae2cab49b47ec91d00697de7c0667912f0551bd930da2042995600d50366a97f2359b31813a7c70c4382f8e66f44da225c8fe2b2d7ff4876b940c15d813cda200733754780bec6b23f0bc7b7b1d4c585a39cd45a734d1f5ab8610b9cd70da286b33e1ad502016656247bd389e76809844003b6ecae8177e3cdfd1e80f9ec2373d714bddcf2f5ae90ea8b5e94b50c6f653b964459ceb9019e9a1c85eb24d044a97d4b9c364029d1e4023535efbc3a8512071ad53d6c30c0e0b244dcf5b2a3c498c89e15e308e8239fb5f44b6b5bfb951f0e43a4e1b234e97654b52c09f57339fefd7e327ea9c57429ac83339cd19f226fa5e577d97e5b5029df2b5e282a615feb9692103bfd6188d3c7bc361e9b6465d17e6434b601556059ea38215d9841fbdffaca1e62f0423f53a9c863844c3947db6f29a1b4465d222d4a181e5c9e0e785011c68fc984c273e5aac79c92424909095ad3967a3e4d885bc55b168d8d7a73586671a5a83dcd376f322991e45710669a5de19f16fb715eed84316d2ba926fd545057487bb422c0fd60c9ca7dc74a76be095568340e0180b78ea9c9c2db3623ffe16350b6ed521968cbd198c1675b5f85c69c00f5d71490a0e74a2e1f14b4bedec046b11977ed5b5018457a52dd0fc38c0186c146f8db17f11642e7fb692dc7ee8336031682990e67222bec534a64eb6a0e4835d197e2c716fa4318cd1f2522ceb7c892f7225b63b19a5aab178132fb2a7ced9c7be75c732370169b6e932af097ac83e4561f647ba53482a2d0842b8b65ce3bbd82c8847a25566b9170f346d4f84d5f52b0ff40c4728b31d94e06a89f9e8a1aa6fe0df3428c41e4c822e4fa0db4ab655b0b87ab85b91a7dcdc0b463cd7077c713f6dec89f93655405d72f0121",
+  "fb6fec4745089191b368f4dc6c76bb8c",
+  "1754d3505aebc890f74ad35bfac1888a4ca74aa3c703f1a2913cfe4a7ad3272472dce6c89f764517547c0be5a3766b071cf9a1dcc2a5e11078b946be5aa66d7b70739cb1ea331c853ce4bb919bd900dfaa16bd89c67feef8de11850afa384b642f151bd8d44995060b56628cee5a9a56b84b987fe0b318d51c0b8b80280919f739913af7b434e952d5c80fe175799a1285ef35b4fb3dce825e301524c3ac169619bb9796602021a56d0f66fcbda62acbf436af67afd54353e85fb07bfaf7f45719d7473950dd385aec32d6959df84fa0a335ed00864d335bf750482be022a75f6b7a2e7367e175ba953e1c3b5311018aae47180cf24661c5b725cef302497d383b355ef8088b891d965051219543b60bee7f6e482bee23a386a7c7665fa47695b2dfc1ca5b4cb60276424f979d1283fee16d55e767e730b758957adcb5261ef610855ea012082a4733ae357613d336afe439d6ebdcd2583e46e7319f6376b501ba54b3dc1dc6c57c4cefb2fb3c22577a6be267601ec30b0944840e3dfd2d695ecfae2cab49b47ec91d00697de7c0667912f0551bd930da2042995600d50366a97f2359b31813a7c70c4382f8e66f44da225c8fe2b2d7ff4876b940c15d813cda200733754780bec6b23f0bc7b7b1d4c585a39cd45a734d1f5ab8610b9cd70da286b33e1ad502016656247bd389e76809844003b6ecae8177e3cdfd1e80f9ec2373d714bddcf2f5ae90ea8b5e94b50c6f653b964459ceb9019e9a1c85eb24d044a97d4b9c364029d1e4023535efbc3a8512071ad53d6c30c0e0b244dcf5b2a3c498c89e15e308e8239fb5f44b6b5bfb951f0e43a4e1b234e97654b52c09f57339fefd7e327ea9c57429ac83339cd19f226fa5e577d97e5b5029df2b5e282a615feb9692103bfd6188d3c7bc361e9b6465d17e6434b601556059ea38215d9841fbdffaca1e62f0423f53a9c863844c3947db6f29a1b4465d222d4a181e5c9e0e785011c68fc984c273e5aac79c92424909095ad3967a3e4d885bc55b168d8d7a73586671a5a83dcd376f322991e45710669a5de19f16fb715eed84316d2ba926fd545057487bb422c0fd60c9ca7dc74a76be095568340e0180b78ea9c9c2db3623ffe16350b6ed521968cbd198c1675b5f85c69c00f5d71490a0e74a2e1f14b4bedec046b11977ed5b5018457a52dd0fc38c0186c146f8db17f11642e7fb692dc7ee8336031682990e67222bec534a64eb6a0e4835d197e2c716fa4318cd1f2522ceb7c892f7225b63b19a5aab178132fb2a7ced9c7be75c732370169b6e932af097ac83e4561f647ba53482a2d0842b8b65ce3bbd82c8847a25566b9170f346d4f84d5f52b0ff40c4728b31d94e06a89f9e8a1aa6fe0df3428c41e4c822e4fa0db4ab655b0b87ab85b91a7dcdc0b463cd7077c713f6dec89f93655405d72f0121",
+  "a871847600366bc81a44ceaa353bd91a",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (empty) 1`] = `
+[
+  "",
+  "6f04dd50e15f389e73d66981a20254c8",
+  "",
+  "9d9d27f73caf6a8e775fe53da8b60461",
+]
+`;
+
+exports[`golden: symmetric > chacha20poly1305 (hello) 1`] = `
+[
+  "7839b6363ec7b2f18a36a6",
+  "ed613ef56ef06b2ae49fd9fd6ff8f56b",
+  "7839b6363ec7b2f18a36a6",
+  "0e1c49fddf5e669e4169399aa09776b1",
+]
+`;
+
+exports[`golden: symmetric > rejects a tampered tag 1`] = `"CryptoError"`;
