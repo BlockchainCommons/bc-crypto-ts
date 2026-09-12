@@ -1,7 +1,7 @@
 /**
  * Annotates the mechanical `--isolatedDeclarations` cases.
  *
- *   node scripts/annotate-isolated-declarations.mjs [--dry-run]
+ *   bun scripts/annotate-isolated-declarations.ts [--dry-run]
  *
  * The reference tsconfig enables `isolatedDeclarations`, which the monorepo did
  * not. It requires an explicit type on any exported declaration whose type a
@@ -27,20 +27,26 @@ let out = "";
 try {
   out = execFileSync("bunx", ["tsc", "--noEmit"], { cwd: root, encoding: "utf8" });
 } catch (e) {
+  if (!(e instanceof Error) || !("stdout" in e)) throw e;
   out = String(e.stdout ?? "");
 }
 
-const errors = [];
+type Diagnostic = { file: string; line: number; code: string };
+const errors: Diagnostic[] = [];
 for (const line of out.split("\n")) {
   const m = /^(\S+\.ts)\((\d+),(\d+)\): error (TS901[02]):/.exec(line.trim());
   if (m) errors.push({ file: m[1], line: Number(m[2]), code: m[4] });
 }
-if (errors.length === 0) { console.log("no isolatedDeclarations errors"); process.exit(0); }
+if (errors.length === 0) {
+  console.log("no isolatedDeclarations errors");
+  process.exit(0);
+}
 
-const byFile = new Map();
+const byFile = new Map<string, Diagnostic[]>();
 for (const e of errors) {
-  if (!byFile.has(e.file)) byFile.set(e.file, []);
-  byFile.get(e.file).push(e);
+  const list = byFile.get(e.file) ?? [];
+  list.push(e);
+  byFile.set(e.file, list);
 }
 
 let fixed = 0;
@@ -55,7 +61,10 @@ for (const [file, list] of byFile) {
     if (text === undefined || /:\s*\S+\s*=/.test(text.replace(/=.*/, "$&"))) continue;
 
     // export const NAME = new Klass(   |   static readonly NAME = new Klass(
-    const ctor = /^(\s*(?:export\s+)?(?:static\s+)?(?:readonly\s+)?(?:const\s+)?)([A-Za-z_$][\w$]*)(\s*=\s*new\s+)([A-Za-z_$][\w$.]*)/.exec(text);
+    const ctor =
+      /^(\s*(?:export\s+)?(?:static\s+)?(?:readonly\s+)?(?:const\s+)?)([A-Za-z_$][\w$]*)(\s*=\s*new\s+)([A-Za-z_$][\w$.]*)/.exec(
+        text,
+      );
     if (ctor && !text.includes(": ")) {
       const type = ctor[4].split(".").pop();
       lines[idx] = text.replace(`${ctor[2]}${ctor[3]}`, `${ctor[2]}: ${type}${ctor[3]}`);

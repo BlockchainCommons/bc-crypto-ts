@@ -64,6 +64,7 @@ Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons
 
 ### Version History
 
+- **1.0.0-beta.2 (September 12, 2026)** - scrypt mirrors the reference's parameter rules (`logN < 16·r`, `r·p < 2^30`, the parameterised path's `10..=64` output length) and gains `maxmem`; PBKDF2 accepts `dkLen: 0`; argon2id keeps only the reference's fixed costs. See [CHANGELOG.md](./CHANGELOG.md).
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
 
 ### Roadmap

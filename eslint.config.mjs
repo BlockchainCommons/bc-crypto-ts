@@ -5,8 +5,6 @@ import { resolve } from "node:path";
 
 /*
  * Strict, type-checked ESLint flat config for the @blockchaincommons/crypto library.
- * (Migrated from the @bcts/eslint shared config, inlined here so the package
- * is self-contained.)
  */
 const project = resolve(process.cwd(), "./tsconfig.json");
 
@@ -42,7 +40,7 @@ export default [
 
       // Conflicts with tsconfig `isolatedDeclarations`, which REQUIRES a type
       // annotation on the exported variable; this rule wants that annotation
-      // removed in favour of a constructor type argument.
+      // removed in favor of a constructor type argument.
       "@typescript-eslint/consistent-generic-constructors": "off",
 
       // Type safety errors

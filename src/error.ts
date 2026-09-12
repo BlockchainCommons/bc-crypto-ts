@@ -107,7 +107,8 @@ export class CryptoError extends Error {
 
   /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */
   static authenticationFailed(cause?: unknown): CryptoError {
-    return new CryptoError("AEAD authentication failed", { code: "AuthenticationFailed" }, cause);
+    // The reference's `Error::Aead` displays as "AEAD error".
+    return new CryptoError("AEAD error", { code: "AuthenticationFailed" }, cause);
   }
 }
 

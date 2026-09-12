@@ -4,7 +4,7 @@
  * @module ed25519
  */
 import { ed25519 as noble } from "@noble/curves/ed25519.js";
-import { type RngOptions, randomBytes, secureRng } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, type RngOptions, secureRng } from "@blockchaincommons/rand";
 import { requireLength } from "./error.js";
 
 const ED25519_PUBLIC_KEY_SIZE = 32;
@@ -49,7 +49,15 @@ export const ed25519: Ed25519 = {
   SIGNATURE_SIZE: 64,
 
   generatePrivateKey(options) {
-    return randomBytes(ED25519_PRIVATE_KEY_SIZE, { rng: options?.rng ?? secureRng() });
+    // The reference's `ed25519_new_private_key_using` reaches the generator
+    // through rand_core generics (`SigningKey::generate` → `fill_bytes`): the
+    // packed stream where a generator distinguishes one, else the same bytes
+    // as `randomBytes`.
+    const rng: RandomNumberGenerator = options?.rng ?? secureRng();
+    const key = new Uint8Array(ED25519_PRIVATE_KEY_SIZE);
+    if (rng.fillBytesPacked !== undefined) rng.fillBytesPacked(key);
+    else rng.fillBytes(key);
+    return key;
   },
 
   publicKey(privateKey) {

@@ -2,8 +2,8 @@
  * Public API report via @microsoft/api-extractor.
  *
  * Usage:
- *   bun scripts/api-report.mjs --local   # (re)generate the api/<pkg>.api.md report
- *   bun scripts/api-report.mjs           # verify the committed report matches
+ *   bun scripts/api-report.ts --local   # (re)generate the api/<pkg>.api.md report
+ *   bun scripts/api-report.ts           # verify the committed report matches
  *
  * api-extractor requires a `.d.ts` entry point; tsdown emits `.d.mts`, so a
  * transient copy is made inside dist/ first. The committed report
@@ -48,8 +48,7 @@ try {
   if (result.apiReportChanged && !local) {
     console.error(
       `Public API surface changed but api/${REPORT} was not updated.
-` +
-        "Review the change, then run `bun run api:snapshot` to accept it.",
+` + "Review the change, then run `bun run api:snapshot` to accept it.",
     );
     process.exit(1);
   }

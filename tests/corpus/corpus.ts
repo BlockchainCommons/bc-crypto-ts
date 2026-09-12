@@ -241,7 +241,33 @@ const ED_ZERO_S = "00".repeat(32);
 const FF32 = "ff".repeat(32);
 const FF64 = "ff".repeat(64);
 /** Report B2: low-order X25519 public keys. */
-export const X25519_LOW_ORDER: string[] = ["00".repeat(32), "01" + "00".repeat(31)];
+/**
+ * Every encoding of a low-order point (RFC 7748 §6.1, little-endian): 0, 1,
+ * the two order-8 points, p − 1, p, p + 1, and (bit 255 is masked on both
+ * sides) two of them with the high bit set. The reference derives the same
+ * zero-secret key for all of them; the port rejects them (D2).
+ */
+export const X25519_LOW_ORDER: string[] = [
+  "0000000000000000000000000000000000000000000000000000000000000000",
+  "0100000000000000000000000000000000000000000000000000000000000000",
+  "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800",
+  "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157",
+  "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+  "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+  "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+  "0000000000000000000000000000000000000000000000000000000000000080",
+  "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+];
+/** Ed25519's group order L, for a non-canonical `s` (`s + L`). */
+const ED_L = (1n << 252n) + 27742317777372353535851937790883648493n;
+const leHexToBigInt = (h: string): bigint =>
+  BigInt("0x" + (h.match(/../g) ?? []).reverse().join(""));
+const bigIntToLeHex = (v: bigint, bytes: number): string => {
+  let out = "";
+  for (let i = 0; i < bytes; i++)
+    out += ((v >> BigInt(8 * i)) & 0xffn).toString(16).padStart(2, "0");
+  return out;
+};
 
 const firstSigned = (scheme: "ecdsa" | "schnorr" | "ed25519") => {
   const t = SIGNED.find((x) => x.scheme === scheme);
@@ -263,6 +289,13 @@ function* verify(): Generator<Recipe> {
     yield verifyOf("ed25519", pub, flip(sig), msg);
   }
   const ed = firstSigned("ed25519");
+  // A non-canonical s (s + L): rejected on both sides (`check_scalar` / noble's range check).
+  yield verifyOf(
+    "ed25519",
+    ed.pub,
+    ed.sig.slice(0, 64) + bigIntToLeHex(leHexToBigInt(ed.sig.slice(64)) + ED_L, 32),
+    ed.msg,
+  );
   // B1
   yield verifyOf("ed25519", ED_IDENTITY, ED_IDENTITY + ED_ZERO_S, "6869");
   yield verifyOf("ed25519", ED_IDENTITY_NONCANONICAL, ED_IDENTITY + ED_ZERO_S, "6869");
@@ -296,22 +329,34 @@ function* faults(): Generator<Recipe> {
   yield { k: "scrypt", pw, salt, len: 32, n: 4, r: 1.5, p: 1 };
   yield { k: "argon2id", pw, salt, len: 3 };
   yield { k: "argon2id", pw, salt: cyc(4), len: 32 };
-  yield { k: "argon2id", pw, salt, len: 32, t: 0 };
+  // scrypt shape rules of `scrypt::Params::new` (RFC 7914 §2): logN < 16·r, r·p < 2^30.
+  yield { k: "scrypt", pw, salt, len: 32, n: 17, r: 1, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 32, n: 16, r: 1, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 32, n: 15, r: 1, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 32, n: 4, r: 32768, p: 32768 };
+  // The parameterised path's output-length bound (10..=64) and the default path's absence of one.
+  yield { k: "scrypt", pw, salt, len: 9, n: 4, r: 8, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 65, n: 4, r: 8, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 10, n: 4, r: 8, p: 1 };
+  yield { k: "scrypt", pw, salt, len: 65 };
+  // Parity the corpus never pinned: an X25519 public key with bit 255 set, an empty HKDF salt.
+  yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx("ff".repeat(32)) };
+  yield { k: "hkdfSha256", key: cyc(32, 0x10), salt: cyc(0), len: 32 };
+  yield { k: "hkdfSha512", key: cyc(32, 0x10), salt: cyc(0), len: 32 };
   yield { k: "hkdfSha256", key: cyc(32, 0x10), salt, len: 8161 };
   yield { k: "hkdfSha256", key: cyc(32, 0x10), salt, len: 1.5 };
   yield { k: "pbkdf2Sha256", pw, salt, iter: 0, len: 32 };
   yield { k: "pbkdf2Sha256", pw, salt, iter: 1, len: 0 };
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(8), counter: -1 };
-  // B5 (accepted today; the reference's `scrypt_opt` bound is 10 ≤ len ≤ 64)
+  // The parameterised path rejects len 8 (10..=64); the default path accepts it — on both sides.
   yield { k: "scrypt", pw, salt, len: 8, n: 4, r: 8, p: 1 };
   yield { k: "scrypt", pw, salt, len: 8 };
   // A6: the JS-only keystream on an honest input (js-only in the reference harness)
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(64) };
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(64), counter: 1 };
 }
-/** Recipes the frozen baseline bundle cannot run (no `chacha20`, no argon2id `t`/`m`/`p`). */
-export const noBaseline = (r: Recipe): boolean =>
-  r.k === "chacha20" || (r.k === "argon2id" && (r.t ?? r.m ?? r.p) !== undefined);
+/** Recipes the frozen baseline bundle cannot run (no `chacha20`). */
+export const noBaseline = (r: Recipe): boolean => r.k === "chacha20";
 
 export const categories: Record<string, () => Generator<Recipe>> = {
   hashes,

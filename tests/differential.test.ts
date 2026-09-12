@@ -37,6 +37,33 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
       (r.pub.hex === "01" + "00".repeat(31) || r.pub.hex === "ee" + "ff".repeat(30) + "7f") &&
       r.sig.hex.endsWith("00".repeat(32)),
   },
+  {
+    // Seeded Ed25519 key generation draws the reference's packed
+    // `fill_bytes` stream (`SeededRng.fillBytesPacked`); the baseline drew
+    // one step per byte (`random_data`), which is not what the reference does.
+    id: "T2",
+    landed: true,
+    matches: (r) => r.k === "newPriv" && r.alg === "ed25519",
+  },
+  {
+    // scrypt's parameterised path mirrors `scrypt::Params::new`: output length
+    // in 10..=64, logN < 16·r, r·p < 2^30. The baseline computed these; the
+    // reference panics; the tree throws.
+    id: "T3",
+    landed: true,
+    matches: (r) =>
+      r.k === "scrypt" &&
+      r.n !== undefined &&
+      (r.len < 10 || r.len > 64 || r.n >= 16 * (r.r ?? 8) || (r.r ?? 8) * (r.p ?? 1) >= 2 ** 30),
+  },
+  {
+    // PBKDF2 with dkLen 0 is an empty key on the tree (as the reference returns);
+    // the baseline threw.
+    id: "T4",
+    landed: true,
+    matches: (r) =>
+      (r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.len === 0 && r.iter >= 1,
+  },
 ];
 
 const baseline = baselineAdapterFor(baselineMod, randBaseline);

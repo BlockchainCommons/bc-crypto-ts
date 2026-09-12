@@ -12,15 +12,12 @@ export interface AeadOptions {
     readonly aad?: Uint8Array | undefined;
 }
 
-// @public (undocumented)
+// @public
 export function argon2id(password: Uint8Array, salt: Uint8Array, options: Argon2idOptions): Uint8Array<ArrayBuffer>;
 
 // @public
 export interface Argon2idOptions {
     readonly dkLen: number;
-    readonly m?: number | undefined;
-    readonly p?: number | undefined;
-    readonly t?: number | undefined;
 }
 
 // @public
@@ -197,6 +194,7 @@ export function scrypt(password: Uint8Array, salt: Uint8Array, options: ScryptOp
 export interface ScryptOptions {
     readonly dkLen: number;
     readonly logN?: number | undefined;
+    readonly maxmem?: number | undefined;
     readonly p?: number | undefined;
     readonly r?: number | undefined;
 }

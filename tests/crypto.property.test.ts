@@ -127,14 +127,17 @@ describe("properties for B1, B2, B4", () => {
       () => c.scrypt(pw, salt, { dkLen: 32, r: 1.5 }),
       () => c.scrypt(pw, salt, { dkLen: 32, p: 0 }),
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 40 }), // in domain; the backend's memory limit
+      () => c.scrypt(pw, salt, { dkLen: 32, logN: 17, r: 1 }), // RFC 7914: logN must be below 16·r
+      () => c.scrypt(pw, salt, { dkLen: 32, logN: 4, r: 32768, p: 32768 }), // r·p must be below 2^30
+      () => c.scrypt(pw, salt, { dkLen: 9, logN: 4, r: 8, p: 1 }), // parameterised path: 10 ≤ dkLen ≤ 64
+      () => c.scrypt(pw, salt, { dkLen: 65, logN: 4 }),
+      () => c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 0 }),
       () => c.argon2id(pw, salt, { dkLen: 3 }),
       () => c.argon2id(pw, salt.subarray(0, 4), { dkLen: 32 }),
-      () => c.argon2id(pw, salt, { dkLen: 32, t: 0 }),
       () => c.hkdfSha256(salt, salt, { dkLen: 8161 }),
       () => c.hkdfSha256(salt, salt, { dkLen: 1.5 }),
       () => c.hkdfSha512(salt, salt, { dkLen: -1 }),
       () => c.pbkdf2Sha256(pw, salt, { iterations: 0, dkLen: 32 }),
-      () => c.pbkdf2Sha512(pw, salt, { iterations: 1, dkLen: 0 }),
       () => c.chacha20(k32, salt.subarray(0, 12), pw, { counter: -1 }),
       () => c.chacha20(k32, salt.subarray(0, 12), pw, { counter: 2 ** 32 }),
     ];
@@ -209,5 +212,48 @@ describe("properties for B1, B2, B4", () => {
       expect(c.CryptoError.isCryptoError(err) && err.code === "InvalidData").toBe(true);
       expect((err as Error).cause).toBeInstanceOf(Error);
     }
+  });
+});
+
+describe("KDF domains mirrored from the reference's crates (1.0.0-beta.2)", () => {
+  const pw = new Uint8Array(2);
+  const salt = new Uint8Array(16).fill(0x50);
+  it("scrypt: the default path accepts any dkLen ≥ 1, the parameterised path 10..=64", () => {
+    expect(c.scrypt(pw, salt, { dkLen: 8 }).length).toBe(8);
+    expect(c.scrypt(pw, salt, { dkLen: 65 }).length).toBe(65);
+    expect(c.scrypt(pw, salt, { dkLen: 10, logN: 4 }).length).toBe(10);
+    expect(c.scrypt(pw, salt, { dkLen: 64, logN: 4 }).length).toBe(64);
+    expect(() => c.scrypt(pw, salt, { dkLen: 9, logN: 4 })).toThrow(
+      "scrypt dkLen must be an integer in [10, 64], got 9",
+    );
+    expect(() => c.scrypt(pw, salt, { dkLen: 65, r: 8 })).toThrow(
+      RangeError === undefined ? "" : "got 65",
+    );
+  });
+  it("scrypt: logN < 16·r and r·p < 2^30, named", () => {
+    expect(() => c.scrypt(pw, salt, { dkLen: 32, logN: 16, r: 1 })).toThrow(
+      "scrypt logN must be below 16·r",
+    );
+    expect(c.scrypt(pw, salt, { dkLen: 32, logN: 15, r: 1 }).length).toBe(32);
+    expect(() => c.scrypt(pw, salt, { dkLen: 32, logN: 4, r: 32768, p: 32768 })).toThrow(
+      "scrypt r·p must be below 2^30",
+    );
+  });
+  it("scrypt: maxmem is validated and forwarded", () => {
+    expect(() => c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 1 })).toThrow(/maxmem/);
+    expect(c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 1 << 30 })).toEqual(
+      c.scrypt(pw, salt, { dkLen: 32, logN: 4 }),
+    );
+    expect(() => c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 1.5 })).toThrow("got 1.5");
+  });
+  it("pbkdf2: dkLen 0 is an empty key, as the reference returns", () => {
+    expect(c.pbkdf2Sha256(pw, salt, { iterations: 1, dkLen: 0 })).toEqual(new Uint8Array(0));
+    expect(c.pbkdf2Sha512(pw, salt, { iterations: 7, dkLen: 0 })).toEqual(new Uint8Array(0));
+    expect(() => c.pbkdf2Sha256(pw, salt, { iterations: 0, dkLen: 0 })).toThrow("iterations");
+  });
+  it("argon2id: the reference's fixed costs, no knobs", () => {
+    // Argon2::default() — the cross-platform vector in crypto.test.ts pins the bytes.
+    expect(c.argon2id(pw, salt, { dkLen: 32 }).length).toBe(32);
+    expect(Object.keys({ dkLen: 32 } satisfies c.Argon2idOptions)).toEqual(["dkLen"]);
   });
 });

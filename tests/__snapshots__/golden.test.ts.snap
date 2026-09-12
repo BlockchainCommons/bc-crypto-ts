@@ -30,7 +30,6 @@ exports[`golden: freeze additions (B1–B5) > B4: faults that escape CryptoError
 {
   "argon2id dkLen 3": "throw:CryptoError:argon2id dkLen must be an integer in [4, 4294967295], got 3",
   "argon2id salt 4": "throw:CryptoError:argon2id salt must be at least 8 bytes, got 4",
-  "argon2id t 0": "throw:CryptoError:argon2id t must be an integer in [1, 4294967295], got 0",
   "chacha20 counter -1": "throw:CryptoError:ChaCha20 counter must be an integer in [0, 4294967295], got -1",
   "ecdsa.compressPublicKey(04‖01*64)": "throw:CryptoError:ECDSA uncompressed public key is not a point on the curve",
   "ecdsa.decompressPublicKey(02‖ff*32)": "throw:CryptoError:ECDSA compressed public key is not a point on the curve",
@@ -39,18 +38,18 @@ exports[`golden: freeze additions (B1–B5) > B4: faults that escape CryptoError
   "ecdsa.sign(0)": "throw:CryptoError:ECDSA private key is not a valid scalar (must be in [1, n - 1])",
   "hkdfSha256 length 1.5": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 1.5",
   "hkdfSha256 length 8161": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 8161",
-  "pbkdf2Sha256 dkLen 0": "throw:CryptoError:pbkdf2 dkLen must be an integer in [1, 4294967295], got 0",
+  "pbkdf2Sha256 dkLen 0": "",
   "pbkdf2Sha256 iterations 0": "throw:CryptoError:pbkdf2 iterations must be an integer in [1, 4294967295], got 0",
   "schnorr.publicKey(0)": "throw:CryptoError:Schnorr private key is not a valid scalar (must be in [1, n - 1])",
-  "scrypt dkLen 0": "throw:CryptoError:scrypt dkLen must be an integer in [1, 4294967295], got 0",
+  "scrypt dkLen 0": "throw:CryptoError:scrypt dkLen must be an integer in [1, 137438953440], got 0",
   "scrypt logN 0": "throw:CryptoError:scrypt logN must be an integer in [1, 63], got 0",
   "scrypt r 1.5": "throw:CryptoError:scrypt r must be an integer in [1, 4294967295], got 1.5",
 }
 `;
 
-exports[`golden: freeze additions (B1–B5) > B5: scrypt output length below the reference's opt bound (today: accepted) 1`] = `
+exports[`golden: freeze additions (B1–B5) > B5: scrypt output length below the reference's opt bound (parameterised: throw; default: accepted) 1`] = `
 [
-  "2423a4ae53f6581a",
+  "throw:CryptoError:scrypt dkLen must be an integer in [10, 64], got 8",
   "8685bd02e2cada6a",
 ]
 `;
@@ -274,7 +273,7 @@ exports[`golden: keys and signatures > ed25519 1`] = `
   "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664",
   "2589970d73cbdf923fd51e1259d786542f38a31534380fbdc0ebe13e8518c5395f95c4a111b992969f9b28fc72c2e549f8773ce51768ddcbad0ef6251b791806",
   true,
-  "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed",
+  "7e061813569f540fb501367178373e8859424ceddfc39407bb066f2953f140dc",
 ]
 `;
 

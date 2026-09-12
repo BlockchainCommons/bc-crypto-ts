@@ -1,18 +1,6 @@
 # Migrating from `@bcts/crypto` to `@blockchaincommons/crypto`
 
-`@blockchaincommons/crypto` is the canonical home of this library. It was
-extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts)
-monorepo, where it was published as `@bcts/crypto`, into its own Blockchain
-Commons repository at
-[`BlockchainCommons/bc-crypto-ts`](https://github.com/BlockchainCommons/bc-crypto-ts),
-and redesigned as an idiomatic TypeScript library in the same release.
-
-**Every byte this package produces is unchanged.** Hashes, MACs, KDF outputs,
-AEAD ciphertexts and tags, keys, shared secrets and signatures are
-byte-identical to `@bcts/crypto` and to the Rust reference `bc-crypto 0.14.0`;
-511 golden vectors, a differential corpus against the frozen pre-redesign
-bundle, and a Rust cross-validation harness enforce that. What changed is the
-shape of the API.
+`@blockchaincommons/crypto` is the redesigned successor to `@bcts/crypto`.
 
 ## TL;DR checklist
 
@@ -60,7 +48,7 @@ is gone; everything it held is exported from the root under the new names.
 | `scrypt(pw, salt, len)` | `scrypt(pw, salt, { dkLen })` |
 | `scryptOpt(pw, salt, len, logN, r, p)` | `scrypt(pw, salt, { dkLen, logN, r, p })` |
 | `argon2id(pw, salt, len)` | `argon2id(pw, salt, { dkLen })` |
-| `argon2idHashOpt(pw, salt, len, t, m, p)` | `argon2id(pw, salt, { dkLen, t, m, p })` |
+| `argon2idHashOpt(pw, salt, len, t, m, p)` | removed: the reference exposes only `Argon2::default()` (Argon2id v0x13, m 19456 KiB, t 2, p 1) and the wire (`Argon2idParams`) carries a salt only, so no other costs can be reproduced elsewhere |
 | `memzero(a)` | unchanged |
 | `memzeroVecVecU8(arrays)` | `memzeroAll(arrays)` |
 

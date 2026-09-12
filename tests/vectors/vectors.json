@@ -1,5 +1,5 @@
 {
- "count": 642,
+ "count": 660,
  "vectors": [
   {
    "recipe": {
@@ -7654,7 +7654,7 @@
      "7953171132032326923"
     ]
    },
-   "expect": "7eb559bbbf6cce2632cf9f194aeb50943de7e1cbad54dcfab27a42759f5e2fed"
+   "expect": "7e061813569f540fb501367178373e8859424ceddfc39407bb066f2953f140dc"
   },
   {
    "recipe": {
@@ -7693,7 +7693,7 @@
      "1"
     ]
    },
-   "expect": "808000800020a0a0a088bc0eefdbce00b008a5fd123e938b9fe9a76f2ae4aeb6"
+   "expect": "801600000000000080160000000000000000002d000000008016002d00000000"
   },
   {
    "recipe": {
@@ -7732,7 +7732,7 @@
      "14627333968358932480"
     ]
    },
-   "expect": "6577c517d5880c649ca87121ca3ab779c08809f94cd81ea5ec073881be8f8d23"
+   "expect": "656c66666666666677ecb7ba6decffffc5849968e27135d617630b62311c9f9c"
   },
   {
    "recipe": {
@@ -7771,7 +7771,7 @@
      "1"
     ]
    },
-   "expect": "000080808020a02088bc54da87815b36d14db7ce17bfc3722bfffa06e4c5592a"
+   "expect": "000000000000000000000000000000008016000000000000801600000000d002"
   },
   {
    "recipe": {
@@ -9319,6 +9319,21 @@
    "recipe": {
     "k": "ed25519Verify",
     "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9250ebd821c7972cd746720ba5244af754b1d5e68d1b742d0abcf0e14adeb0611"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
      "hex": "0100000000000000000000000000000000000000000000000000000000000000"
     },
     "sig": {
@@ -9478,6 +9493,97 @@
   },
   {
    "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "0000000000000000000000000000000000000000000000000000000000000080"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
     "k": "ecdsaPub",
     "priv": {
      "hex": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -9612,7 +9718,7 @@
   },
   {
    "recipe": {
-    "k": "argon2id",
+    "k": "scrypt",
     "pw": {
      "text": "pw"
     },
@@ -9621,9 +9727,170 @@
      "start": 80
     },
     "len": 32,
-    "t": 0
+    "n": 17,
+    "r": 1,
+    "p": 1
    },
    "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 16,
+    "r": 1,
+    "p": 1
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 15,
+    "r": 1,
+    "p": 1
+   },
+   "expect": "1d085084ca5c26e74bfc3b4ee41bf6cc1d83c8391abec330e9b3e9589c499050"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 4,
+    "r": 32768,
+    "p": 32768
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 9,
+    "n": 4,
+    "r": 8,
+    "p": 1
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 65,
+    "n": 4,
+    "r": 8,
+    "p": 1
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 10,
+    "n": 4,
+    "r": 8,
+    "p": 1
+   },
+   "expect": "2423a4ae53f6581ab194"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 65
+   },
+   "expect": "8685bd02e2cada6ab86038b7c1f6e5479d8d4d14a9838391066169fa3a46de12f71bc507c1ba6e5995861f84a0ca4df1c3f82ae4930c89a8c1bbe34d75a7f518b4"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "028e0e2f2244f6a67a5241b1ee1e8459a1d88bef0f552b57be85d2e3ec671407"
+  },
+  {
+   "recipe": {
+    "k": "hkdfSha256",
+    "key": {
+     "cycle": 32,
+     "start": 16
+    },
+    "salt": {
+     "cycle": 0,
+     "start": 0
+    },
+    "len": 32
+   },
+   "expect": "f487b35bc69c5be9051d562aac47c854e69fc760ecb092814bd427f5f4848795"
+  },
+  {
+   "recipe": {
+    "k": "hkdfSha512",
+    "key": {
+     "cycle": 32,
+     "start": 16
+    },
+    "salt": {
+     "cycle": 0,
+     "start": 0
+    },
+    "len": 32
+   },
+   "expect": "ba7f3a1d57ef025b1e13576160c866db403fdc426676fccd339798e28ef8abed"
   },
   {
    "recipe": {
@@ -9683,7 +9950,7 @@
     "iter": 1,
     "len": 0
    },
-   "expect": "throw:CryptoError"
+   "expect": ""
   },
   {
    "recipe": {
@@ -9719,7 +9986,7 @@
     "r": 8,
     "p": 1
    },
-   "expect": "2423a4ae53f6581a"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {

@@ -3,7 +3,7 @@
   "entryPoints": [
     "src/index.ts"
   ],
-  "out": "docs",
+  "out": "docs/api",
   "name": "@blockchaincommons/crypto",
   "includeVersion": true,
   "readme": "README.md",

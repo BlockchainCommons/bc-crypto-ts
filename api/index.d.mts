@@ -122,9 +122,9 @@ interface Pbkdf2Options {
   /** Derived key length in bytes. */
   readonly dkLen: number;
 }
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` and `dkLen` are integers ≥ 1. */
+/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
 export declare function pbkdf2Sha256(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` and `dkLen` are integers ≥ 1. */
+/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
 export declare function pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 /** Options for the HKDF functions. */
 interface HkdfOptions {
@@ -145,36 +145,42 @@ export declare function hkdfSha512(keyMaterial: Uint8Array, salt: Uint8Array, op
 //#region src/kdf.d.ts
 /** Options for {@link scrypt}. Defaults are the reference parameters. */
 interface ScryptOptions {
-  /** Derived key length in bytes. */
+  /**
+   * Derived key length in bytes. With any of `logN`, `r`, `p` given it must
+   * be in `[10, 64]` (the reference's parameterised path, `scrypt::Params::new`);
+   * with the defaults any length ≥ 1 is accepted (the reference's default path).
+   */
   readonly dkLen: number;
-  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 63]. */
+  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 63] and below `16·r`. */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
   readonly r?: number | undefined;
-  /** Parallelism. Default 1. */
+  /** Parallelism. Default 1. `r·p` must be below 2^30. */
   readonly p?: number | undefined;
+  /**
+   * JS-only: the working-memory ceiling in bytes the backend enforces
+   * (`128·r·(N + p + 1)` bytes are needed). Default a little over 1 GiB
+   * (`128·8·(2^20 + 2)`); the reference allocates whatever the parameters
+   * imply, so pass a larger value to derive with parameters above the default.
+   */
+  readonly maxmem?: number | undefined;
 }
 /**
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is not an integer ≥ 1,
- * `logN` not in [1, 63], `r` or `p` not ≥ 1, or the parameters exceed the
- * backend's memory limit.
+ * @throws {CryptoError} `InvalidParameter` when `dkLen` is outside its domain
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 63] or not below `16·r`
+ * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
+ * 2^30, or the parameters exceed `maxmem`.
  */
 export declare function scrypt(password: Uint8Array, salt: Uint8Array, options: ScryptOptions): Uint8Array<ArrayBuffer>;
-/** Options for {@link argon2id}. Defaults are the reference parameters. */
+/** Options for {@link argon2id}. */
 interface Argon2idOptions {
-  /** Derived key length in bytes. */
+  /** Derived key length in bytes; at least 4. */
   readonly dkLen: number;
-  /** Iterations. Default 2. */
-  readonly t?: number | undefined;
-  /** Memory in KiB. Default 19456. */
-  readonly m?: number | undefined;
-  /** Parallelism. Default 1. */
-  readonly p?: number | undefined;
 }
 /**
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is not an integer ≥ 4,
- * `salt` is shorter than 8 bytes, `t` is not ≥ 1, `p` not in [1, 2^24 - 1],
- * or `m` is not ≥ 8·p.
+ * Argon2id with the reference's fixed parameters (m 19456 KiB, t 2, p 1).
+ * @throws {CryptoError} `InvalidParameter` when `dkLen` is not an integer ≥ 4
+ * or `salt` is shorter than 8 bytes.
  */
 export declare function argon2id(password: Uint8Array, salt: Uint8Array, options: Argon2idOptions): Uint8Array<ArrayBuffer>;
 //#endregion
