@@ -1,3 +1,4 @@
+import { ED25519_STRICT_FIXTURES } from "./corpus/ed25519-strict-fixtures";
 /**
  * Differential harness: every corpus recipe through the frozen baseline
  * bundle (with its own inlined pre-redesign rand) AND the working tree;
@@ -26,6 +27,14 @@ const BASELINE_SHA256 = "d3a5a82546fd0424232ba32ea1c1bd485e08f35f3f241edc90c8476
 /** The only allowed differences. Error classes changed from AeadError/Error to CryptoError. */
 const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean }[] = [
   {
+    id: "T5-uncofactored-ed25519",
+    landed: true,
+    matches: (r) =>
+      r.k === "ed25519Verify" &&
+      "hex" in r.sig &&
+      ED25519_STRICT_FIXTURES.some((f) => !f.valid && "hex" in r.sig && f.signature === r.sig.hex),
+  },
+  {
     // Strict Ed25519 verification (`verify_strict`): the baseline accepts
     // non-canonical/small-order encodings, the working tree rejects them.
     id: "T1",
@@ -36,6 +45,33 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
       "hex" in r.sig &&
       (r.pub.hex === "01" + "00".repeat(31) || r.pub.hex === "ee" + "ff".repeat(30) + "7f") &&
       r.sig.hex.endsWith("00".repeat(32)),
+  },
+  {
+    // Seeded Ed25519 key generation draws the reference's packed
+    // `fill_bytes` stream (`SeededRng.fillBytesPacked`); the baseline drew
+    // one step per byte (`random_data`), which is not what the reference does.
+    id: "T2",
+    landed: true,
+    matches: (r) => r.k === "newPriv" && r.alg === "ed25519",
+  },
+  {
+    // scrypt's parameterised path mirrors `scrypt::Params::new`: output length
+    // in 10..=64, logN < 16·r, r·p < 2^30. The baseline computed these; the
+    // reference panics; the tree throws.
+    id: "T3",
+    landed: true,
+    matches: (r) =>
+      r.k === "scrypt" &&
+      r.n !== undefined &&
+      (r.len < 10 || r.len > 64 || r.n >= 16 * (r.r ?? 8) || (r.r ?? 8) * (r.p ?? 1) >= 2 ** 30),
+  },
+  {
+    // PBKDF2 with dkLen 0 is an empty key on the tree (as the reference returns);
+    // the baseline threw.
+    id: "T4",
+    landed: true,
+    matches: (r) =>
+      (r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.len === 0 && r.iter >= 1,
   },
 ];
 

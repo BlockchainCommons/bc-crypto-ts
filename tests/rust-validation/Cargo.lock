@@ -226,6 +226,7 @@ dependencies = [
  "bc-crypto",
  "bc-rand",
  "hex",
+ "rand",
  "rand_core 0.6.4",
  "serde",
  "serde_json",

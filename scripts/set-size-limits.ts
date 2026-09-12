@@ -1,7 +1,7 @@
 /**
  * Seeds .size-limit.json from a real measurement.
  *
- *   node scripts/set-size-limits.mjs
+ *   bun scripts/set-size-limits.ts
  *
  * Runs size-limit in JSON mode with the limits removed, then writes each
  * entry's limit at the measured size plus 20% headroom, rounded up to the next
@@ -15,13 +15,21 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cfgPath = join(root, ".size-limit.json");
-const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+type SizeEntry = { name: string; path: string | string[]; limit?: string };
+const cfg: SizeEntry[] = JSON.parse(readFileSync(cfgPath, "utf8"));
 
 // measure with the limits lifted
 const probe = cfg.map(({ limit, ...rest }) => ({ ...rest, void: limit }));
-writeFileSync(cfgPath, JSON.stringify(probe.map(({ void: _v, ...r }) => r), null, 2) + "\n");
+writeFileSync(
+  cfgPath,
+  JSON.stringify(
+    probe.map(({ void: _v, ...r }) => r),
+    null,
+    2,
+  ) + "\n",
+);
 
-let measured;
+let measured: { size: number }[];
 try {
   const out = execFileSync("bunx", ["size-limit", "--json"], { cwd: root, encoding: "utf8" });
   measured = JSON.parse(out.slice(out.indexOf("[")));

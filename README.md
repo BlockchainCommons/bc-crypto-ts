@@ -26,15 +26,13 @@ import {
   hkdfSha256,
   chacha20Poly1305,
   ecdsa,
-  schnorr,
-  ed25519,
-  x25519,
   CryptoError,
 } from "@blockchaincommons/crypto";
+import { randomBytes } from "@blockchaincommons/rand";
 
 // Hashes and KDFs are plain functions.
 const digest = sha256(new TextEncoder().encode("hello"));
-const key = hkdfSha256(digest, new Uint8Array(16), { dkLen: 32 });
+const key = hkdfSha256(randomBytes(32), new Uint8Array(16), { dkLen: 32 });
 
 // Algorithm families are objects; every function that draws randomness
 // takes `{ rng }` and defaults to the secure generator.
@@ -43,7 +41,8 @@ const sig = ecdsa.sign(priv, digest);
 ecdsa.verify(ecdsa.publicKey(priv), sig, digest); // true
 
 // AEAD returns `ciphertext || tag` as one buffer.
-const nonce = new Uint8Array(chacha20Poly1305.NONCE_SIZE);
+// Use a fresh nonce for every encryption under the same key.
+const nonce = randomBytes(chacha20Poly1305.NONCE_SIZE);
 const sealed = chacha20Poly1305.encrypt(key, nonce, digest, { aad: new Uint8Array(0) });
 try {
   chacha20Poly1305.decrypt(key, nonce, sealed);
@@ -64,6 +63,8 @@ Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons
 
 ### Version History
 
+
+- **1.0.0-beta.2 (September 12, 2026)** - Ed25519 uses the Rust reference's uncofactored verification equation; ChaCha20 counter-overflow reports `InvalidParameter`; scrypt validates its backend limits. scrypt mirrors the reference's parameter rules (`logN < 16·r`, `r·p < 2^30`, the parameterised path's `10..=64` output length) and gains `maxmem`; PBKDF2 accepts `dkLen: 0` with positive iterations; argon2id keeps only the reference's fixed costs.
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
 
 ### Roadmap

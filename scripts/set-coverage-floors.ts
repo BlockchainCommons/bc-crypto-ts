@@ -1,7 +1,7 @@
 /**
  * Seeds vitest.config.ts coverage thresholds from a measured run.
  *
- *   bun run test:coverage && node scripts/set-coverage-floors.mjs
+ *   bun run test:coverage && bun scripts/set-coverage-floors.ts
  *
  * Reads coverage/coverage-summary.json and writes each metric's floor a few
  * points below the measured value. Thresholds are raise-only by policy: this
@@ -31,7 +31,10 @@ let cfg = readFileSync(cfgPath, "utf8");
 for (const [metric, value] of Object.entries(measured)) {
   const re = new RegExp(`(${metric}:\\s*)(\\d+)`);
   const m = re.exec(cfg);
-  if (!m) { console.error(`no ${metric} threshold found in vitest.config.ts`); process.exit(1); }
+  if (!m) {
+    console.error(`no ${metric} threshold found in vitest.config.ts`);
+    process.exit(1);
+  }
   const current = Number(m[2]);
   const next = Math.max(current, value);
   cfg = cfg.replace(re, `$1${next}`);

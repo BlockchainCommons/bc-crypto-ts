@@ -83,29 +83,32 @@ export interface Pbkdf2Options {
 
 const pbkdf2Domain = (options: Pbkdf2Options): { c: number; dkLen: number } => ({
   c: expectInt("pbkdf2 iterations", options.iterations, 1, U32_MAX),
-  dkLen: expectInt("pbkdf2 dkLen", options.dkLen, 1, U32_MAX),
+  // `dkLen: 0` is an empty key on both sides (the reference fills a zero-length Vec).
+  dkLen: expectInt("pbkdf2 dkLen", options.dkLen, 0, U32_MAX),
 });
 
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` and `dkLen` are integers ≥ 1. */
+/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
 export function pbkdf2Sha256(
   password: Uint8Array,
   salt: Uint8Array,
   options: Pbkdf2Options,
 ): Uint8Array<ArrayBuffer> {
   const domain = pbkdf2Domain(options);
+  if (domain.dkLen === 0) return new Uint8Array(0);
   return guard(
     () => pbkdf2(nobleSha256, password, salt, domain),
     backendRejected("pbkdf2 parameters"),
   );
 }
 
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` and `dkLen` are integers ≥ 1. */
+/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
 export function pbkdf2Sha512(
   password: Uint8Array,
   salt: Uint8Array,
   options: Pbkdf2Options,
 ): Uint8Array<ArrayBuffer> {
   const domain = pbkdf2Domain(options);
+  if (domain.dkLen === 0) return new Uint8Array(0);
   return guard(
     () => pbkdf2(nobleSha512, password, salt, domain),
     backendRejected("pbkdf2 parameters"),

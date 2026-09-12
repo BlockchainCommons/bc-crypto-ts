@@ -25,8 +25,7 @@ export type Recipe =
   | { k: "hkdfSha512"; key: Bytes; salt: Bytes; len: number }
   /** `n` is log2(N), the exponent, as the underlying API takes it. */
   | { k: "scrypt"; pw: Bytes; salt: Bytes; len: number; n?: number; r?: number; p?: number }
-  /** `t`, `m`, `p` are the port's JS-only extension; a recipe that sets one has no reference analog. */
-  | { k: "argon2id"; pw: Bytes; salt: Bytes; len: number; t?: number; m?: number; p?: number }
+  | { k: "argon2id"; pw: Bytes; salt: Bytes; len: number }
   /** Raw ChaCha20 keystream — JS-only (report A6); `counter` is the initial block counter. */
   | { k: "chacha20"; key: Bytes; nonce: Bytes; d: Bytes; counter?: number }
   | { k: "aeadEncrypt"; pt: Bytes; key: Bytes; nonce: Bytes; aad?: Bytes }
@@ -77,14 +76,7 @@ export interface VectorApi {
     r?: number,
     p?: number,
   ): Uint8Array;
-  argon2id(
-    pw: Uint8Array,
-    salt: Uint8Array,
-    len: number,
-    t?: number,
-    m?: number,
-    p?: number,
-  ): Uint8Array;
+  argon2id(pw: Uint8Array, salt: Uint8Array, len: number): Uint8Array;
   chacha20(key: Uint8Array, nonce: Uint8Array, d: Uint8Array, counter?: number): Uint8Array;
   aeadEncrypt(pt: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad?: Uint8Array): Uint8Array;
   aeadDecrypt(ct: Uint8Array, key: Uint8Array, nonce: Uint8Array, aad?: Uint8Array): Uint8Array;
@@ -152,7 +144,7 @@ export function materialize(api: VectorApi, r: Recipe): string {
       case "scrypt":
         return bytesToHex(api.scrypt(B(r.pw), B(r.salt), r.len, r.n, r.r, r.p));
       case "argon2id":
-        return bytesToHex(api.argon2id(B(r.pw), B(r.salt), r.len, r.t, r.m, r.p));
+        return bytesToHex(api.argon2id(B(r.pw), B(r.salt), r.len));
       case "chacha20":
         return bytesToHex(api.chacha20(B(r.key), B(r.nonce), B(r.d), r.counter));
       case "aeadEncrypt":
@@ -233,8 +225,8 @@ export function baselineAdapterFor(m: any, randBaseline: any): VectorApi {
     hkdfSha512: m.hash.hkdfHmacSha512,
     scrypt: (pw, salt, len, n, r, p) =>
       n === undefined ? m.scrypt(pw, salt, len) : m.scryptOpt(pw, salt, len, n, r, p),
-    // The baseline has no `t`/`m`/`p` and no raw ChaCha20; recipes that need them are
-    // excluded from the differential (`noBaseline` in the corpus).
+    // The baseline has no raw ChaCha20; those recipes are excluded from the
+    // differential (`noBaseline` in the corpus).
     argon2id: (pw, salt, len) => m.argon2id(pw, salt, len),
     chacha20: () => {
       throw new Error("no baseline analog");
@@ -308,7 +300,7 @@ export function redesignedAdapterFor(m: any, rand: any): VectorApi {
     hkdfSha256: (k, salt, len) => m.hkdfSha256(k, salt, { dkLen: len }),
     hkdfSha512: (k, salt, len) => m.hkdfSha512(k, salt, { dkLen: len }),
     scrypt: (pw, salt, len, n, r, p) => m.scrypt(pw, salt, { dkLen: len, logN: n, r, p }),
-    argon2id: (pw, salt, len, t, m_, p) => m.argon2id(pw, salt, { dkLen: len, t, m: m_, p }),
+    argon2id: (pw, salt, len) => m.argon2id(pw, salt, { dkLen: len }),
     chacha20: (key, nonce, d, counter) => m.chacha20(key, nonce, d, { counter }),
     aeadEncrypt: (pt, k, n, aad) => m.chacha20Poly1305.encrypt(k, n, pt, { aad }),
     aeadDecrypt: (ct, k, n, aad) => m.chacha20Poly1305.decrypt(k, n, ct, { aad }),

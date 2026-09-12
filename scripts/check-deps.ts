@@ -1,8 +1,8 @@
 /**
  * Dependency hygiene gate.
  *
- *   node scripts/check-deps.mjs          # no monorepo leftovers may survive
- *   node scripts/check-deps.mjs --zero   # additionally: zero runtime deps
+ *   bun scripts/check-deps.ts          # no monorepo leftovers may survive
+ *   bun scripts/check-deps.ts --zero   # additionally: zero runtime deps
  *
  * The first check is universal: an extracted repository must never ship a
  * `@bcts/*` dependency or a `workspace:` protocol range, both of which are

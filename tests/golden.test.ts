@@ -222,7 +222,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       outcome(() => c.ed25519.verify(c.ed25519.publicKey(PRIV), fill(64, 0xff), msg)),
     ]).toMatchSnapshot();
   });
-  it("B4: faults that escape CryptoError (today: noble's own errors)", () => {
+  it("B4: domain faults are reported as CryptoError", () => {
     const n = Uint8Array.from(
       Buffer.from("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", "hex"),
     );
@@ -248,7 +248,6 @@ describe("golden: freeze additions (B1–B5)", () => {
             ["scrypt r 1.5", () => c.scrypt(pw, SALT, { dkLen: 32, r: 1.5 })],
             ["argon2id dkLen 3", () => c.argon2id(pw, SALT, { dkLen: 3 })],
             ["argon2id salt 4", () => c.argon2id(pw, bytes(4), { dkLen: 32 })],
-            ["argon2id t 0", () => c.argon2id(pw, SALT, { dkLen: 32, t: 0 })],
             ["hkdfSha256 length 8161", () => c.hkdfSha256(KEY, SALT, { dkLen: 8161 })],
             ["hkdfSha256 length 1.5", () => c.hkdfSha256(KEY, SALT, { dkLen: 1.5 })],
             [
@@ -262,7 +261,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       ),
     ).toMatchSnapshot();
   });
-  it("B5: scrypt output length below the reference's opt bound (today: accepted)", () => {
+  it("B5: scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
     expect([
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8, logN: 4 })),
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8 })),

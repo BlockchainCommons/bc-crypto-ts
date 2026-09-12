@@ -7,16 +7,18 @@
 //! bytes it produces, not error taxonomy.
 use bc_crypto::*;
 use bc_crypto::hash::{crc32, crc32_data_opt, hkdf_hmac_sha512, pbkdf2_hmac_sha512};
-use bc_rand::{RandomNumberGenerator, SeededRandomNumberGenerator};
+use bc_rand::SeededRandomNumberGenerator;
 
-/// bc-crypto's ed25519 keygen wants a rand_core 0.6 `CryptoRngCore`; bridge
-/// the bc-rand generator to it. `fill_bytes` maps to `fill_random_data`, the
-/// same one-draw-per-byte path TypeScript uses.
+/// bc-crypto's ed25519 keygen wants a rand_core 0.6 `CryptoRngCore`; bc-rand's
+/// generator implements rand_core 0.9. The bridge forwards each method to the
+/// generator's own — `fill_bytes` included, which on the seeded generator is
+/// the packed `fill_bytes_via_next` stream the reference really draws
+/// (TypeScript: `SeededRng.fillBytesPacked`).
 struct Bridge<'a>(&'a mut SeededRandomNumberGenerator);
 impl rand_core::RngCore for Bridge<'_> {
-    fn next_u32(&mut self) -> u32 { self.0.next_u64() as u32 }
-    fn next_u64(&mut self) -> u64 { self.0.next_u64() }
-    fn fill_bytes(&mut self, dest: &mut [u8]) { self.0.fill_random_data(dest); }
+    fn next_u32(&mut self) -> u32 { rand::RngCore::next_u32(self.0) }
+    fn next_u64(&mut self) -> u64 { rand::RngCore::next_u64(self.0) }
+    fn fill_bytes(&mut self, dest: &mut [u8]) { rand::RngCore::fill_bytes(self.0, dest); }
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> std::result::Result<(), rand_core::Error> { self.fill_bytes(dest); Ok(()) }
 }
 impl rand_core::CryptoRng for Bridge<'_> {}
@@ -119,41 +121,28 @@ fn run(r: &serde_json::Value) -> String {
     match out { Ok(Some(s)) => s, _ => "throw".into() }
 }
 
-/// Recipes with no reference analog (report §3): the raw ChaCha20 keystream and
-/// argon2id's `t`/`m`/`p`. Classified before comparison, whatever the outcome.
-fn js_only(r: &serde_json::Value) -> bool {
-    let k = r["k"].as_str().unwrap();
-    k == "chacha20" || (k == "argon2id" && (r.get("t").is_some() || r.get("m").is_some() || r.get("p").is_some()))
-}
+/// Recipes with no reference analog (RUST_DIVERGENCES.md §2): the raw ChaCha20
+/// keystream. Classified before comparison, whatever the outcome.
+fn js_only(r: &serde_json::Value) -> bool { r["k"].as_str().unwrap() == "chacha20" }
 
-/// The machine-readable twin of RUST_DIVERGENCES.md §1.
-///  D2: x25519 with a low-order public key — the reference derives the
-///      zero-secret HKDF, TypeScript rejects (ADR 0004).
-///  D3: verify on malformed input of the right length — the reference
-///      panics, TypeScript returns false (ADR 0004).
-///  D4–D6: KDF argument domains (RUST_DIVERGENCES.md §1).
-/// Report B1 (strict Ed25519) is NOT allowlisted: those vectors mismatch
-/// until W1 lands, and then match.
 fn expected_divergence(r: &serde_json::Value, got: &str, want: &str) -> Option<&'static str> {
-    let k = r["k"].as_str().unwrap();
-    if k == "x25519Shared" && want.starts_with("throw") && got != "throw" {
-        let low_order = ["00".repeat(32), format!("01{}", "00".repeat(31))];
-        if r["pub"].get("hex").and_then(|h| h.as_str()).map(|h| low_order.contains(&h.to_string())).unwrap_or(false) { return Some("D2"); }
+    // Only the reviewed recipes may use an exception; new cases fail closed.
+    static EXPECTED: std::sync::LazyLock<serde_json::Value> = std::sync::LazyLock::new(||
+        serde_json::from_str(include_str!("../expected-divergences.json")).unwrap());
+    let entry = EXPECTED.as_array()?.iter().find(|entry| entry["recipe"] == *r)?;
+    match entry["id"].as_str()? {
+        "D2" if want == "throw" && got == hex::encode(hkdf_hmac_sha256([0u8; 32], b"agreement", 32)) => Some("D2"),
+        "D3" if got == "throw" && want == "0" => Some("D3"),
+        "D4" if got != "throw" && want == "throw" => Some("D4"),
+        "D5" if got != "throw" && want == "throw" => Some("D5"),
+        _ => None,
     }
-    if k.ends_with("Verify") && got == "throw" && want == "0" { return Some("D3"); }
-    let num = |key: &str| r.get(key).and_then(|x| x.as_f64());
-    // D4: scrypt with log_n = 0 (N = 1) — the reference computes, TypeScript rejects.
-    if k == "scrypt" && num("n") == Some(0.0) && want == "throw" && got != "throw" { return Some("D4"); }
-    // D5: PBKDF2 with 0 iterations or a 0-byte output — the reference computes, TypeScript rejects.
-    if k.starts_with("pbkdf2") && (num("iter") == Some(0.0) || num("len") == Some(0.0)) && want == "throw" && got != "throw" { return Some("D5"); }
-    // D6: scrypt_opt output length outside 10..=64 — the reference's `Params::new` panics, TypeScript computes.
-    if k == "scrypt" && r.get("n").is_some() && num("len").map(|l| !(10.0..=64.0).contains(&l)).unwrap_or(false) && got == "throw" && want != "throw" { return Some("D6"); }
-    None
 }
 
 fn main() {
     std::panic::set_hook(Box::new(|_| {}));
-    let path = std::env::args().nth(1).expect("path");
+    let strict = std::env::args().any(|arg| arg == "--strict");
+    let path = std::env::args().skip(1).find(|arg| arg != "--strict").expect("path");
     let file: File = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
     assert_eq!(file.count, file.vectors.len());
     let (mut ok, mut expected, mut mismatch) = (0, 0, 0);
@@ -162,7 +151,7 @@ fn main() {
         let got = run(&v.recipe);
         let want = norm(&v.expect);
         if got == want { ok += 1; continue; }
-        if let Some(id) = expected_divergence(&v.recipe, &got, &want) { expected += 1; eprintln!("expected-divergence [{id}] {}", v.recipe); continue; }
+        if let Some(id) = (!strict).then(|| expected_divergence(&v.recipe, &got, &want)).flatten() { expected += 1; eprintln!("expected-divergence [{id}] {}", v.recipe); continue; }
         mismatch += 1;
         eprintln!("MISMATCH {}\n  rust: {}\n  ts:   {}", v.recipe, got, v.expect);
     }
