@@ -27,5 +27,3 @@ coverage
 
 # Rust cross-validation harness build artifacts
 tests/rust-validation/target
-
-# Commit bun.lock for reproducible development and CI installs.

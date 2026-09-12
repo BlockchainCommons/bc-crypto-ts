@@ -26,11 +26,11 @@ exports[`golden: freeze additions (B1–B5) > B3: verify on malformed keys and s
 ]
 `;
 
-exports[`golden: freeze additions (B1–B5) > B4: faults that escape CryptoError (today: noble's own errors) 1`] = `
+exports[`golden: freeze additions (B1–B5) > B4: domain faults are reported as CryptoError 1`] = `
 {
   "argon2id dkLen 3": "throw:CryptoError:argon2id dkLen must be an integer in [4, 4294967295], got 3",
   "argon2id salt 4": "throw:CryptoError:argon2id salt must be at least 8 bytes, got 4",
-  "chacha20 counter -1": "throw:CryptoError:ChaCha20 counter must be an integer in [0, 4294967295], got -1",
+  "chacha20 counter -1": "throw:CryptoError:ChaCha20 counter must be an integer in [0, 4294967294], got -1",
   "ecdsa.compressPublicKey(04‖01*64)": "throw:CryptoError:ECDSA uncompressed public key is not a point on the curve",
   "ecdsa.decompressPublicKey(02‖ff*32)": "throw:CryptoError:ECDSA compressed public key is not a point on the curve",
   "ecdsa.publicKey(0)": "throw:CryptoError:ECDSA private key is not a valid scalar (must be in [1, n - 1])",
@@ -42,7 +42,7 @@ exports[`golden: freeze additions (B1–B5) > B4: faults that escape CryptoError
   "pbkdf2Sha256 iterations 0": "throw:CryptoError:pbkdf2 iterations must be an integer in [1, 4294967295], got 0",
   "schnorr.publicKey(0)": "throw:CryptoError:Schnorr private key is not a valid scalar (must be in [1, n - 1])",
   "scrypt dkLen 0": "throw:CryptoError:scrypt dkLen must be an integer in [1, 137438953440], got 0",
-  "scrypt logN 0": "throw:CryptoError:scrypt logN must be an integer in [1, 63], got 0",
+  "scrypt logN 0": "throw:CryptoError:scrypt logN must be an integer in [1, 32], got 0",
   "scrypt r 1.5": "throw:CryptoError:scrypt r must be an integer in [1, 4294967295], got 1.5",
 }
 `;

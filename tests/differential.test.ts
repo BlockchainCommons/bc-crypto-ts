@@ -1,3 +1,4 @@
+import { ED25519_STRICT_FIXTURES } from "./corpus/ed25519-strict-fixtures";
 /**
  * Differential harness: every corpus recipe through the frozen baseline
  * bundle (with its own inlined pre-redesign rand) AND the working tree;
@@ -25,6 +26,14 @@ const BASELINE_SHA256 = "d3a5a82546fd0424232ba32ea1c1bd485e08f35f3f241edc90c8476
 
 /** The only allowed differences. Error classes changed from AeadError/Error to CryptoError. */
 const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean }[] = [
+  {
+    id: "T5-uncofactored-ed25519",
+    landed: true,
+    matches: (r) =>
+      r.k === "ed25519Verify" &&
+      "hex" in r.sig &&
+      ED25519_STRICT_FIXTURES.some((f) => !f.valid && "hex" in r.sig && f.signature === r.sig.hex),
+  },
   {
     // Strict Ed25519 verification (`verify_strict`): the baseline accepts
     // non-canonical/small-order encodings, the working tree rejects them.

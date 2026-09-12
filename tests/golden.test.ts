@@ -222,7 +222,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       outcome(() => c.ed25519.verify(c.ed25519.publicKey(PRIV), fill(64, 0xff), msg)),
     ]).toMatchSnapshot();
   });
-  it("B4: faults that escape CryptoError (today: noble's own errors)", () => {
+  it("B4: domain faults are reported as CryptoError", () => {
     const n = Uint8Array.from(
       Buffer.from("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", "hex"),
     );

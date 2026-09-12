@@ -151,23 +151,23 @@ interface ScryptOptions {
    * with the defaults any length ≥ 1 is accepted (the reference's default path).
    */
   readonly dkLen: number;
-  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 63] and below `16·r`. */
+  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 32] and below `16·r`. */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
   readonly r?: number | undefined;
   /** Parallelism. Default 1. `r·p` must be below 2^30. */
   readonly p?: number | undefined;
   /**
-   * JS-only: the working-memory ceiling in bytes the backend enforces
+   * The working-memory ceiling in bytes the backend enforces
    * (`128·r·(N + p + 1)` bytes are needed). Default a little over 1 GiB
-   * (`128·8·(2^20 + 2)`); the reference allocates whatever the parameters
-   * imply, so pass a larger value to derive with parameters above the default.
+   * (`128·8·(2^20 + 2)`); the reference has no configurable ceiling. Raising maxmem does not bypass
+   * the backend's logN limit or the runtime's allocation limits.
    */
   readonly maxmem?: number | undefined;
 }
 /**
  * @throws {CryptoError} `InvalidParameter` when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 63] or not below `16·r`
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -331,7 +331,7 @@ interface Ed25519 {
   /**
    * `(publicKey, signature, message)`, the same order as `ecdsa.verify` and `schnorr.verify`.
    *
-   * Strict (the reference's `verify_strict`): only canonical point
+   * Uses the reference's uncofactored verification equation. Only canonical point
    * encodings are accepted, and a small-order public key or `R` never
    * verifies. `false` on any invalid or malformed input of the right length.
    * @throws {CryptoError} `InvalidSize` on a wrong-length key or signature.
@@ -344,7 +344,7 @@ export declare const ed25519: Ed25519;
 //#region src/stream.d.ts
 /** Options for {@link chacha20}. */
 interface Chacha20Options {
-  /** The initial block counter (0 by default). */
+  /** The initial block counter (0 by default), in [0, 2^32 - 2]. */
   readonly counter?: number | undefined;
 }
 /**
@@ -352,7 +352,8 @@ interface Chacha20Options {
  * (12 bytes), starting at block `counter`. Applying it twice restores the
  * input.
  * @throws {CryptoError} `InvalidSize` on a wrong-length key or nonce;
- * `InvalidParameter` unless `counter` is an integer in [0, 2^32 - 1].
+ * `InvalidParameter` if `counter` is outside [0, 2^32 - 2] or the data
+ * would use the backend-reserved block counter 2^32 - 1.
  */
 export declare function chacha20(key: Uint8Array, nonce: Uint8Array, data: Uint8Array, { counter }?: Chacha20Options): Uint8Array;
 //#endregion

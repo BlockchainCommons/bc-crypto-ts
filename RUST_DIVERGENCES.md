@@ -1,144 +1,129 @@
-# Divergences from the Rust reference implementation
+# Compatibility with the Rust reference
 
-This library is a TypeScript port of
-[`BlockchainCommons/bc-crypto-rust`](https://github.com/BlockchainCommons/bc-crypto-rust), tracked
-at version **0.14.0**
-([`4f2b791`](https://github.com/BlockchainCommons/bc-crypto-rust/commit/4f2b791320730578b04943c833c4a9e6c232fc4d)).
+The published reference is `bc-crypto` **0.14.0**, commit
+[`4f2b791320730578b04943c833c4a9e6c232fc4d`](https://github.com/BlockchainCommons/bc-crypto-rust/commit/4f2b791320730578b04943c833c4a9e6c232fc4d),
+recorded in [`.github/versions.yml`](./.github/versions.yml).
+This document describes the current TypeScript working tree, including the pending beta.2 fixes
+listed in [CHANGELOG.md](./CHANGELOG.md) and [MIGRATION.md](./MIGRATION.md).
 
-The tracked version and commit are recorded in [`.github/versions.yml`](./.github/versions.yml), and
-the `upstream.yml` workflow opens a tracking issue whenever the reference implementation moves ahead
-of it.
+## Validation scope
 
-This document records known differences from the tracked Rust version, JavaScript input validation,
-and API mappings:
+The committed corpus contains **679 vectors**. Against the published Rust reference:
 
-1. **True behavioral divergences** - the same input produces a different outcome.
-2. **JS-only input domain** - inputs that have no Rust analog, so there is nothing to diverge from.
-3. **Mapping equivalences** - JS-specific inputs that are validated through the bytes they produce.
+```
+679 vectors - 649 match, 30 expected-divergence/js-only, 0 MISMATCH
+```
 
-## 1. True behavioral divergences
+The 30 comprise D2 ×9, D3 ×13, D4 ×1, D5 ×4, and raw ChaCha20 ×3.
+The exception list contains exact reviewed recipes in
+[`tests/rust-validation/expected-divergences.json`](./tests/rust-validation/expected-divergences.json).
+A new recipe cannot automatically inherit an exception. The harness also checks that D2
+returns the specific HKDF-of-zero key, not merely any successful result.
 
-Checked by `tests/rust-validation` (`cargo run --release -- ../vectors/vectors.json`) over the 660
-golden vectors: **633 match, 27 expected divergence / JS-only (D2 ×9, D3 ×13, D4 ×1, D5 ×1, J1 ×3),
-0 MISMATCH.** Four behavioral divergences remain. The proposed upstream changes below would resolve
-them; they are not fixes in the tracked Rust version. The counts describe the committed vectors, not
-exhaustive input coverage.
+The harness compares Rust outputs against committed TypeScript expectations. Golden tests
+check the current TypeScript implementation against those expectations. Failures are
+normalized to `throw`; this does not establish equality of error classes, messages,
+panic recovery, or allocation behavior. Wrong-length fixed-array arguments are rejected
+by the harness adapter because the Rust call cannot represent them. Raw ChaCha20 is
+classified before comparison because `bc-crypto` has no corresponding function.
 
-### D2. X25519 with a low-order public key (9 vectors)
+## Remaining behavioral differences from Rust 0.14.0
 
-`x25519-dalek`'s `diffie_hellman` returns the all-zero shared secret for a low-order peer key and
-the reference never checks `was_contributory()`, so `x25519_shared_key` returns
-`HKDF-SHA-256(0³², "agreement")` — the same bytes for every private key — for every encoding of the
-seven low-order points (RFC 7748 §6.1: 0, 1, the two order-8 points, p − 1, p, p + 1, and each with
-bit 255 set, which both sides mask). TypeScript rejects all of them with `CryptoError` `InvalidData`
-(`what: "X25519 public key"`, the backend's error as `cause`). **Proposed upstream change:** check
-`shared_secret.was_contributory()` in `bc-crypto` and return an error. The other public-key vectors,
-including `ff…ff`, derive identically on both sides.
+### D2: X25519 low-order peers
 
-### D3. `verify` on a malformed key or signature of the right length (13 vectors)
+Rust applies HKDF-SHA-256 with salt `agreement` to the all-zero shared secret,
+producing the same symmetric key independently of the private key. TypeScript rejects
+that secret as `CryptoError` with `InvalidData`.
 
-The reference's `*_verify` parse the key and signature with `expect` / `unwrap` and **panic** on an
-x-only key not on the curve, an ECDSA `r`/`s` ≥ n, or an Ed25519 encoding that does not decompress
-(BIP-340 vectors 5 and 14 among them). TypeScript returns `false`. BIP-340's own test vectors and
-RFC 8032 §5.1.7 specify that verification _fails_ on these inputs; the port represents these
-verification failures as `false`. **Proposed upstream change:** parse with `is_ok()` and return
-`false`.
+The fixtures cover nine low-order encodings/aliases. They do not exhaust every high-bit
+variant. RFC 7748 permits all-zero rejection; this higher-level API deliberately chooses it.
 
-### D4. scrypt with `logN: 0` (1 vector)
+### D3: malformed verification inputs
 
-`scrypt::Params::new(0, r, p, len)` passes every check (`0 < 16·r`), so the reference computes with
-N = 1; noble requires `2 ≤ N ≤ 2^32`, so TypeScript throws `InvalidParameter`. The port keeps the
-backend's minimum cost. **Proposed upstream change:** require `log_n ≥ 1`.
+TypeScript returns `false` for right-length invalid keys/signatures. Rust 0.14.0 can panic:
 
-### D5. PBKDF2 with `iterations: 0` (1 vector)
+- ECDSA: public-key or compact-signature parsing fails.
+- Schnorr: x-only public-key parsing fails; invalid signature values can instead return false.
+- Ed25519: public-key decoding fails; malformed R or s is handled inside verification.
 
-RustCrypto's `pbkdf2_body` computes `U₁` unconditionally and iterates `1..rounds`, so **zero
-iterations produce the same bytes as one**; TypeScript throws `InvalidParameter`. RFC 8018 §5.2
-defines the iteration count as a positive integer; the port enforces that requirement. (A
-zero-length output, `dkLen: 0`, is an empty key on both sides.) **Proposed upstream change:** assert
-`iterations ≥ 1` in `bc-crypto` (or in components' `PBKDF2Params`).
+### D4: scrypt logN = 0
 
-> Any divergence found must be added here in the same commit that introduces or discovers it, with
-> the input, the Rust outcome, the TypeScript outcome, the reason the difference is intentional and
-> the upstream fix, and mirrored in `expected_divergence()` in the harness.
+Rust's parameter constructor accepts N = 1 and computes a result. TypeScript requires
+logN >= 1 and rejects this input with `InvalidParameter`, consistent with RFC 7914.
 
-## 2. JS-only input domain
+### D5: PBKDF2 iterations = 0
 
-- **Wrong-length inputs.** Rust takes fixed-size arrays (`&[u8; 32]`), so a wrong length cannot
-  reach it. TypeScript throws `CryptoError` with `code: "InvalidSize"` and
-  `details: { what, expected, actual }`. The harness's `fixed::<N>` maps a wrong length to `throw`,
-  so these vectors are _compared_ (throw = throw), not skipped.
-- **`scrypt`'s memory ceiling.** noble refuses a derivation whose working set `128·r·(N + p + 1)`
-  exceeds `maxmem` (default `128·8·(2^20 + 2)`, a little over 1 GiB); the reference allocates
-  whatever the parameters imply. `ScryptOptions.maxmem` lifts the ceiling on request; the default
-  limits the memory requested by a derivation.
-- **`chacha20`** (raw keystream, `{ counter }`) has no function in `bc-crypto`; the reference stack
-  has it in `provenance-mark-rust`, which uses the `chacha20` crate directly. Its vectors are
-  classified `J1` by the harness (the provenance-mark harness compares the obfuscated output end to
-  end).
-- **Argument-domain faults** (zero or out-of-range scalars, points not on the curve, KDF numbers out
-  of range, negative counters): every one throws `CryptoError` — `InvalidData` for a scalar or
-  point, `InvalidParameter` for a KDF number or counter — with the backend's error as `cause` where
-  there is one. The reference panics on the same inputs (D4 and D5 above are the two it computes
-  instead).
+For nonempty output, Rust treats zero iterations as one. For empty output, it returns
+an empty vector. TypeScript rejects zero before checking output length, for both
+SHA-256 and SHA-512. The four fixtures cover both hashes with lengths 0 and 32.
 
-## 3. Mapping equivalences
+## Closed in TypeScript: Ed25519's verification equation
 
-- **Strict Ed25519.** The reference's `ed25519_verify` is `ed25519-dalek`'s `verify_strict`: a
-  small-order public key or `R` is rejected, a non-canonical `s` (≥ L) is rejected by
-  `check_scalar`, and a non-canonical `R` fails the byte comparison against the recomputed `R`. The
-  port decodes the key and `R` with `zip215: false`, returns `false` if either is small-order, then
-  verifies with `{ zip215: false }`. The reference parser also accepts some non-canonical encodings
-  of the **public key** (`FieldElement::from_bytes` ignores bit 255 and does not check `y < p`)
-  while the port rejects it, as RFC 8032 requires; that encoding exists only for a point with
-  `y ≤ 18`. The generated signing fixtures do not establish equivalence for every such encoding.
-  Vectored: the identity key with the `(identity, 0)` signature, its non-canonical `y = p + 1`
-  encoding, a non-canonical `R`, a non-canonical `s` (`s + L`), RFC 8032 vectors 1–3 with bit-flip
-  negatives, and every signing triple with flipped signature, message and key.
-- **Low-S ECDSA.** Both sides reject a high-S signature (libsecp256k1's `verify_ecdsa` does not
-  normalise; noble verifies with `lowS: true`); vectored per signing triple.
-- **X25519 bit 255.** Both sides mask the high bit of a public key (RFC 7748 §5): `ff…ff` derives
-  the same key on both (vectored).
-- **HKDF with an empty salt** equals a salt of `hashLen` zero bytes on both sides (RFC 5869 default;
-  HMAC pads either to the block size). Vectored for SHA-256 and SHA-512; provenance-mark's only HKDF
-  call relies on it.
-- **scrypt parameter rules.** `scrypt::Params::new` (the reference's parameterised `scrypt_opt`)
-  requires `log_n < 64`, `r, p > 0`, `log_n < 16·r`, `r·p < 2^30` and `10 ≤ len ≤ 64`; the
-  reference's default `scrypt` uses `Params::recommended()` (log₂N 17, r 8, p 1) and only requires
-  `len > 0`. The port enforces the same rules on the same two paths (`logN`/`r`/`p` given → the
-  parameterised rules). Vectored on both paths, including `(logN 17, r 1)` and
-  `(logN 4, r 32768, p 32768)`.
-- **argon2id.** `Argon2::default()` — Argon2id, version 0x13, m 19456 KiB, t 2, p 1 — on both sides;
-  `dkLen ≥ 4` and `salt ≥ 8` are the crate's minimums and the port's checks. There are no other
-  costs on either side.
-- **Derivations.** `derive_signing_private_key` and `ecdsa_derive_private_key` are the same
-  computation in the reference; the port exports one `deriveSigningPrivateKey` (and
-  `deriveAgreementPrivateKey`) at the root. The frozen `ecdsaDerive` recipe maps to the Rust
-  `ecdsa_derive_private_key` and the TypeScript `deriveSigningPrivateKey`.
-- **API shape.** `bc_crypto::ecdsa_sign(priv, msg)` ↔ `ecdsa.sign(priv, msg)`; the `*_using(rng)`
-  functions ↔ `{ rng }` options; `scrypt_opt(pw, salt, len, log_n, r, p)` ↔
-  `scrypt(pw, salt, { dkLen, logN, r, p })`. The harness maps each recipe to the Rust call directly.
-- **AEAD layout.** Rust returns `(ciphertext, tag)`; TypeScript returns the concatenation. Vectors
-  store the concatenation and the harness joins the Rust tuple. A failed decryption is `Error::Aead`
-  there and `CryptoError` `AuthenticationFailed` (message `"AEAD error"`) here.
-- **Ed25519 verify order.** Rust and the pre-redesign TypeScript took `(pub, msg, sig)`; the
-  redesign takes `(pub, sig, msg)` like the other schemes. Pure argument order; the harness swaps.
-- **RNG bridge and the two byte streams.** `ecdsa_new_private_key_using`,
-  `x25519_new_private_key_using` and `schnorr_sign_using` draw `rng.random_data(n)` (one 64-bit step
-  per byte on the seeded generator); `ed25519_new_private_key_using` takes a
-  `rand_core::CryptoRngCore` and `SigningKey::generate` draws `fill_bytes` — on the seeded generator
-  the _packed_ `fill_bytes_via_next` stream (eight bytes per step). TypeScript mirrors both:
-  `randomBytes(n, { rng })` for the first three, `rng.fillBytesPacked ?? rng.fillBytes` for Ed25519
-  (identical for every generator but `SeededRng`). The harness bridges `bc-rand`'s generator into
-  the 0.6 trait by forwarding each method to the generator's own. From the fixture seed an Ed25519
-  private key is `7e061813…` on both sides.
+The beta.2 TypeScript implementation computes `[s]B - [k]A` and compares its canonical
+encoding with R, as Dalek's `verify_strict` does. The earlier call to noble's verifier
+cleared the cofactor, allowing a nonzero torsion residual to verify.
+
+Sixteen fixtures cover order-two torsion in A, R, both, or neither. They include signatures
+that must reject and mixed-order cases that satisfy the equation and must remain valid.
+Both implementations agree on these fixtures. Ordinary generated signatures retain their
+results. Rejecting every mixed-order point would not implement Rust's policy.
+
+A residual **decoding-policy difference** remains: TypeScript requires canonical A and R
+encodings; Dalek can decode some non-canonical A encodings and hashes the original bytes.
+Dalek's final canonical byte comparison rejects non-canonical R. A parser difference alone
+does not demonstrate an accepted-signature difference, and the present fixtures do not
+prove equivalence for every non-canonical A. Keep this qualification when describing
+“strict” compatibility; do not switch to ZIP-215 verification as a substitute.
+
+## Platform limits and additional APIs
+
+- **Integer and length validation:** JavaScript can express nonintegers, negative numbers,
+  and wrong-length byte arrays where Rust uses unsigned integers or fixed arrays. TypeScript
+  validates these inputs. This is not a cryptographic output difference.
+- **scrypt limits:** TypeScript supports logN 1–32, subject to `logN < 16*r`, `r*p < 2^30`,
+  output-length rules, and backend/runtime allocation limits. Parameterized output lengths
+  are 10–64; the default path accepts 1 through `(2^32 - 1)*32` subject to memory.
+  Rust additionally checks usize multiplication overflow and has an architecture-dependent
+  logN limit. Its 0.11.0 backend's integer-division length check technically admits another
+  31 output bytes beyond the stated maximum; this enormous allocation was not tested.
+- **scrypt memory:** noble defaults to `128*8*(2^20 + 2)` bytes and checks
+  `128*r*(N+p+1)` against `maxmem`. Rust has no matching configurable ceiling. This is a real
+  resource-policy difference for parameters expressible on both sides. Raising `maxmem`
+  does not enable logN > 32 or bypass engine allocation limits.
+- **PBKDF2 output:** TypeScript caps dkLen at `u32::MAX`; Rust accepts usize. Huge outputs
+  have not been allocated to test runtime behavior. Empty outputs match only with positive
+  iterations.
+- **Raw ChaCha20:** this is an additional TypeScript API used by provenance marks. Its
+  backend reserves block counter `2^32 - 1`; initial counters are 0 through `2^32 - 2`, and
+  `ceil(data.length / 64)` must not exceed `2^32 - 1 - counter`. The wrapper validates
+  capacity and normalizes backend rejection to `CryptoError.InvalidParameter`.
+- **Error handling:** documented validation/authentication failures use `CryptoError`;
+  verification failures of the correct input lengths return false. Resource exhaustion or
+  failures in user-supplied random generators are not covered by a universal error guarantee.
+
+## Equivalent mappings over supported inputs
+
+- ECDSA signs double SHA-256 using deterministic signatures and explicitly rejects high-S
+  signatures. Both sides produce compact 64-byte signatures.
+- X25519 masks the public key's high bit on both sides, independently of low-order rejection.
+- HKDF uses the same salts, empty info, and output bytes. Empty salt is equivalent to the
+  default zero salt for SHA-256 and SHA-512. Signing/agreement derivation names map to the
+  same HKDF operations; the two Rust signing derivations share one TypeScript function.
+- scrypt defaults are logN 17, r 8, p 1. Argon2id defaults are v0x13, m 19456 KiB, t 2, p 1;
+  output length is at least 4 and salt length at least 8. Platform allocation limits remain.
+- Rust's AEAD `(ciphertext, tag)` maps to TypeScript's `ciphertext || tag`. The harness joins
+  and splits them. Authentication failures are compared as normalized failures.
+- Grouped TypeScript methods and options map to Rust free functions. Ed25519 verification
+  takes `(publicKey, signature, message)` in TypeScript; the adapter swaps Rust's order.
+- ECDSA/X25519 private-key generation and Schnorr auxiliary randomness use `random_data`
+  on Rust and `randomBytes` on TypeScript. Ed25519 uses rand_core's `fill_bytes`, mapped to
+  `fillBytesPacked` when supplied and otherwise `fillBytes`. Any custom generator with
+  distinct streams must expose the packed method. Seeded fixtures compare both paths.
 
 ## Maintenance
 
-When the upstream reference moves:
-
-1. Review the diff via the link in the `upstream.yml` tracking issue.
-2. Port the relevant changes.
-3. Update `.github/versions.yml` with the new version and commit.
-4. Update the tracked version at the top of this file.
-5. Add, amend, or remove divergence entries as the port requires.
+Run golden tests and the Rust harness whenever vectors or reference versions change.
+A newly discovered divergence must include an input, both outcomes, rationale, and regression
+coverage. Only add a reviewed exact-recipe exception for an intentionally retained difference.
+When upstream fixes ship, update `.github/versions.yml`, the harness dependency/lockfile,
+changelog and migration notes before revising this inventory and removing obsolete exceptions.

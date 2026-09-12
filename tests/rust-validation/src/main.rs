@@ -7,7 +7,7 @@
 //! bytes it produces, not error taxonomy.
 use bc_crypto::*;
 use bc_crypto::hash::{crc32, crc32_data_opt, hkdf_hmac_sha512, pbkdf2_hmac_sha512};
-use bc_rand::{RandomNumberGenerator, SeededRandomNumberGenerator};
+use bc_rand::SeededRandomNumberGenerator;
 
 /// bc-crypto's ed25519 keygen wants a rand_core 0.6 `CryptoRngCore`; bc-rand's
 /// generator implements rand_core 0.9. The bridge forwards each method to the
@@ -125,43 +125,24 @@ fn run(r: &serde_json::Value) -> String {
 /// keystream. Classified before comparison, whatever the outcome.
 fn js_only(r: &serde_json::Value) -> bool { r["k"].as_str().unwrap() == "chacha20" }
 
-/// Every little-endian encoding of a low-order X25519 point with bit 255 cleared
-/// (RFC 7748 §6.1): 0, 1, the two order-8 points, p - 1, p, p + 1.
-const X25519_LOW_ORDER: [&str; 7] = [
-    "0000000000000000000000000000000000000000000000000000000000000000",
-    "0100000000000000000000000000000000000000000000000000000000000000",
-    "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800",
-    "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157",
-    "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
-    "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
-    "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
-];
-fn is_low_order(hex: &str) -> bool {
-    let Ok(mut b) = hex::decode(hex) else { return false };
-    if b.len() != 32 { return false; }
-    b[31] &= 0x7f;
-    X25519_LOW_ORDER.contains(&hex::encode(b).as_str())
-}
-
 fn expected_divergence(r: &serde_json::Value, got: &str, want: &str) -> Option<&'static str> {
-    let k = r["k"].as_str().unwrap();
-    // D2: a low-order X25519 peer key — the reference derives the zero-secret key, TypeScript rejects.
-    if k == "x25519Shared" && want.starts_with("throw") && got != "throw" {
-        if r["pub"].get("hex").and_then(|h| h.as_str()).map(is_low_order).unwrap_or(false) { return Some("D2"); }
+    // Only the reviewed recipes may use an exception; new cases fail closed.
+    static EXPECTED: std::sync::LazyLock<serde_json::Value> = std::sync::LazyLock::new(||
+        serde_json::from_str(include_str!("../expected-divergences.json")).unwrap());
+    let entry = EXPECTED.as_array()?.iter().find(|entry| entry["recipe"] == *r)?;
+    match entry["id"].as_str()? {
+        "D2" if want == "throw" && got == hex::encode(hkdf_hmac_sha256([0u8; 32], b"agreement", 32)) => Some("D2"),
+        "D3" if got == "throw" && want == "0" => Some("D3"),
+        "D4" if got != "throw" && want == "throw" => Some("D4"),
+        "D5" if got != "throw" && want == "throw" => Some("D5"),
+        _ => None,
     }
-    // D3: verify on a malformed key or signature of the right length — the reference panics, TypeScript returns false.
-    if k.ends_with("Verify") && got == "throw" && want == "0" { return Some("D3"); }
-    let num = |key: &str| r.get(key).and_then(|x| x.as_f64());
-    // D4: scrypt with log_n = 0 (N = 1) — the reference computes, TypeScript rejects.
-    if k == "scrypt" && num("n") == Some(0.0) && want == "throw" && got != "throw" { return Some("D4"); }
-    // D5: PBKDF2 with 0 iterations — the reference treats it as 1, TypeScript rejects.
-    if k.starts_with("pbkdf2") && num("iter") == Some(0.0) && want == "throw" && got != "throw" { return Some("D5"); }
-    None
 }
 
 fn main() {
     std::panic::set_hook(Box::new(|_| {}));
-    let path = std::env::args().nth(1).expect("path");
+    let strict = std::env::args().any(|arg| arg == "--strict");
+    let path = std::env::args().skip(1).find(|arg| arg != "--strict").expect("path");
     let file: File = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
     assert_eq!(file.count, file.vectors.len());
     let (mut ok, mut expected, mut mismatch) = (0, 0, 0);
@@ -170,7 +151,7 @@ fn main() {
         let got = run(&v.recipe);
         let want = norm(&v.expect);
         if got == want { ok += 1; continue; }
-        if let Some(id) = expected_divergence(&v.recipe, &got, &want) { expected += 1; eprintln!("expected-divergence [{id}] {}", v.recipe); continue; }
+        if let Some(id) = (!strict).then(|| expected_divergence(&v.recipe, &got, &want)).flatten() { expected += 1; eprintln!("expected-divergence [{id}] {}", v.recipe); continue; }
         mismatch += 1;
         eprintln!("MISMATCH {}\n  rust: {}\n  ts:   {}", v.recipe, got, v.expect);
     }

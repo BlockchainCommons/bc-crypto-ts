@@ -4,6 +4,8 @@
  * @module ed25519
  */
 import { ed25519 as noble } from "@noble/curves/ed25519.js";
+import { bytesToNumberLE, equalBytes } from "@noble/curves/utils.js";
+import { sha512 } from "@noble/hashes/sha2.js";
 import { type RandomNumberGenerator, type RngOptions, secureRng } from "@blockchaincommons/rand";
 import { requireLength } from "./error.js";
 
@@ -34,7 +36,7 @@ export interface Ed25519 {
   /**
    * `(publicKey, signature, message)`, the same order as `ecdsa.verify` and `schnorr.verify`.
    *
-   * Strict (the reference's `verify_strict`): only canonical point
+   * Uses the reference's uncofactored verification equation. Only canonical point
    * encodings are accepted, and a small-order public key or `R` never
    * verifies. `false` on any invalid or malformed input of the right length.
    * @throws {CryptoError} `InvalidSize` on a wrong-length key or signature.
@@ -79,7 +81,22 @@ export const ed25519: Ed25519 = {
       const a = noble.Point.fromBytes(publicKey, false);
       const r = noble.Point.fromBytes(signature.subarray(0, 32), false);
       if (a.isSmallOrder() || r.isSmallOrder()) return false;
-      return noble.verify(signature, message, publicKey, { zip215: false });
+      const order = noble.Point.Fn.ORDER;
+      const s = bytesToNumberLE(signature.subarray(32));
+      if (s >= order) return false;
+      // Hash the original encodings. Clearing the cofactor here would accept
+      // mixed-order R values that dalek's verify_strict rejects.
+      const k =
+        bytesToNumberLE(
+          sha512
+            .create()
+            .update(signature.subarray(0, 32))
+            .update(publicKey)
+            .update(message)
+            .digest(),
+        ) % order;
+      const expectedR = noble.Point.BASE.multiplyUnsafe(s).subtract(a.multiplyUnsafe(k));
+      return equalBytes(expectedR.toBytes(), signature.subarray(0, 32));
     } catch {
       return false;
     }

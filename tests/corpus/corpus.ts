@@ -1,3 +1,4 @@
+import { ED25519_STRICT_FIXTURES } from "./ed25519-strict-fixtures";
 /**
  * Deterministic differential corpus: input lengths at block boundaries,
  * key/nonce/salt boundaries, AAD present/absent, every exposed KDF
@@ -276,6 +277,8 @@ const firstSigned = (scheme: "ecdsa" | "schnorr" | "ed25519") => {
 };
 
 function* verify(): Generator<Recipe> {
+  for (const f of ED25519_STRICT_FIXTURES)
+    yield verifyOf("ed25519", f.publicKey, f.signature, f.message);
   for (const t of SIGNED) {
     yield verifyOf(t.scheme, t.pub, t.sig, t.msg);
     yield verifyOf(t.scheme, t.pub, flip(t.sig), t.msg);
@@ -296,11 +299,11 @@ function* verify(): Generator<Recipe> {
     ed.sig.slice(0, 64) + bigIntToLeHex(leHexToBigInt(ed.sig.slice(64)) + ED_L, 32),
     ed.msg,
   );
-  // B1
+  // Small-order and non-canonical Ed25519 encodings.
   yield verifyOf("ed25519", ED_IDENTITY, ED_IDENTITY + ED_ZERO_S, "6869");
   yield verifyOf("ed25519", ED_IDENTITY_NONCANONICAL, ED_IDENTITY + ED_ZERO_S, "6869");
   yield verifyOf("ed25519", ED_IDENTITY, ED_IDENTITY_NONCANONICAL + ED_ZERO_S, "6869");
-  // B3
+  // Malformed verification inputs.
   const ec = firstSigned("ecdsa");
   const sc = firstSigned("schnorr");
   yield verifyOf("ecdsa", ec.pub, FF64, ec.msg);
@@ -315,9 +318,9 @@ function* faults(): Generator<Recipe> {
   const n = hx("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
   const pw = txt("pw");
   const salt = cyc(16, 0x50);
-  // B2
+  // Low-order X25519 peers.
   for (const pub of X25519_LOW_ORDER) yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx(pub) };
-  // B4
+  // Scalar, point, and KDF domain checks.
   yield { k: "ecdsaPub", priv: zero };
   yield { k: "schnorrPub", priv: zero };
   yield { k: "ecdsaPub", priv: n };
@@ -345,7 +348,9 @@ function* faults(): Generator<Recipe> {
   yield { k: "hkdfSha512", key: cyc(32, 0x10), salt: cyc(0), len: 32 };
   yield { k: "hkdfSha256", key: cyc(32, 0x10), salt, len: 8161 };
   yield { k: "hkdfSha256", key: cyc(32, 0x10), salt, len: 1.5 };
-  yield { k: "pbkdf2Sha256", pw, salt, iter: 0, len: 32 };
+  for (const k of ["pbkdf2Sha256", "pbkdf2Sha512"] as const) {
+    for (const len of [0, 32]) yield { k, pw, salt, iter: 0, len };
+  }
   yield { k: "pbkdf2Sha256", pw, salt, iter: 1, len: 0 };
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(8), counter: -1 };
   // The parameterised path rejects len 8 (10..=64); the default path accepts it — on both sides.

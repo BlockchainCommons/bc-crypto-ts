@@ -114,7 +114,10 @@ export const ecdsa: Ecdsa = {
     requireLength("ECDSA public key", publicKey, ECDSA_PUBLIC_KEY_SIZE);
     requireLength("ECDSA signature", signature, ECDSA_SIGNATURE_SIZE);
     try {
-      return secp256k1.verify(signature, doubleSha256(message), publicKey, { prehash: false });
+      return secp256k1.verify(signature, doubleSha256(message), publicKey, {
+        prehash: false,
+        lowS: true,
+      });
     } catch {
       return false;
     }

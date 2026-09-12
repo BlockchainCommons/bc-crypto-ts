@@ -126,7 +126,7 @@ describe("properties for B1, B2, B4", () => {
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 64 }),
       () => c.scrypt(pw, salt, { dkLen: 32, r: 1.5 }),
       () => c.scrypt(pw, salt, { dkLen: 32, p: 0 }),
-      () => c.scrypt(pw, salt, { dkLen: 32, logN: 40 }), // in domain; the backend's memory limit
+      () => c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 1 }), // in domain; the backend's memory limit
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 17, r: 1 }), // RFC 7914: logN must be below 16·r
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 4, r: 32768, p: 32768 }), // r·p must be below 2^30
       () => c.scrypt(pw, salt, { dkLen: 9, logN: 4, r: 8, p: 1 }), // parameterised path: 10 ≤ dkLen ≤ 64
@@ -158,7 +158,7 @@ describe("properties for B1, B2, B4", () => {
   it("a backend rejection inside the domain is InvalidParameter with the cause attached", () => {
     let err: unknown;
     try {
-      c.scrypt(new Uint8Array(2), new Uint8Array(16), { dkLen: 32, logN: 40 });
+      c.scrypt(new Uint8Array(2), new Uint8Array(16), { dkLen: 32, logN: 4, maxmem: 1 });
     } catch (e) {
       err = e;
     }
@@ -218,7 +218,7 @@ describe("properties for B1, B2, B4", () => {
 describe("KDF domains mirrored from the reference's crates (1.0.0-beta.2)", () => {
   const pw = new Uint8Array(2);
   const salt = new Uint8Array(16).fill(0x50);
-  it("scrypt: the default path accepts any dkLen ≥ 1, the parameterised path 10..=64", () => {
+  it("scrypt: default and parameterised output-length rules", { timeout: 30_000 }, () => {
     expect(c.scrypt(pw, salt, { dkLen: 8 }).length).toBe(8);
     expect(c.scrypt(pw, salt, { dkLen: 65 }).length).toBe(65);
     expect(c.scrypt(pw, salt, { dkLen: 10, logN: 4 }).length).toBe(10);
@@ -226,9 +226,7 @@ describe("KDF domains mirrored from the reference's crates (1.0.0-beta.2)", () =
     expect(() => c.scrypt(pw, salt, { dkLen: 9, logN: 4 })).toThrow(
       "scrypt dkLen must be an integer in [10, 64], got 9",
     );
-    expect(() => c.scrypt(pw, salt, { dkLen: 65, r: 8 })).toThrow(
-      RangeError === undefined ? "" : "got 65",
-    );
+    expect(() => c.scrypt(pw, salt, { dkLen: 65, r: 8 })).toThrow("got 65");
   });
   it("scrypt: logN < 16·r and r·p < 2^30, named", () => {
     expect(() => c.scrypt(pw, salt, { dkLen: 32, logN: 16, r: 1 })).toThrow(

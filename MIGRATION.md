@@ -18,9 +18,9 @@
 - [ ] `ecdsaDerivePrivateKey` becomes `deriveSigningPrivateKey` (same bytes);
       `deriveAgreementPrivateKey` is unchanged.
 - [ ] Catch one `CryptoError` and switch on `details.code`; `AeadError` and
-      `CryptoResult` no longer exist, and no noble error escapes any more.
+      `CryptoResult` no longer exist, for documented validation and authentication failures.
 - [ ] `ed25519.verify` is strict (a small-order or non-canonical key or `R`
-      never verifies); honest signatures are unaffected.
+      never verifies); standard generated signatures are unaffected.
 - [ ] Raise your Node floor to **22.12** and TypeScript to **>= 5.7**.
 
 ## 1. Package name and imports
@@ -123,20 +123,21 @@ public `CryptoError` constructor are gone; instances come from the static
 factories. Length checks that used to throw a bare
 `Error("Private key must be 32 bytes")` now throw `CryptoError` with
 `code: "InvalidSize"`; the message names the parameter and the actual length.
-Every other fault — an invalid scalar or point, a low-order X25519 public
-key, a KDF argument out of range — is also a `CryptoError` (previously the
+Invalid scalars or points, low-order X25519 public keys, and rejected KDF
+parameters are reported as `CryptoError` (previously the
 noble library's own `Error`/`RangeError` escaped). The three `verify`
 functions return `false` for a malformed signature or public key of the
 right length and only throw for wrong lengths; `ed25519.verify` is strict
-(canonical encodings only, no small-order key or `R`), as the reference's
-`verify_strict`.
+(canonical encodings, no small-order key or `R`, and an uncofactored
+equation). Rust uses the same equation but a more permissive public-key decoder.
 
 ## 5. Randomness
 
 Functions that draw randomness take `{ rng }` and default to
-`@blockchaincommons/rand`'s `secureRng()`. The bytes drawn from a given
-generator are the same as before (one 32-byte fill per key, one per
-Schnorr aux-rand), so seeded outputs are unchanged:
+`@blockchaincommons/rand`'s `secureRng()`. ECDSA/X25519 key generation and Schnorr auxiliary randomness use
+`randomBytes`. Ed25519 uses `fillBytesPacked` when supplied, falling back
+to `fillBytes`; this matches the Rust rand_core path. Custom generators
+with different byte streams must expose that packed method:
 
 ```diff
 - const key = ecdsaNewPrivateKeyUsing(rng);
@@ -152,7 +153,7 @@ types). The IIFE / global-script build is gone; use the ESM or CJS entry.
 
 ## 7. What did not change
 
-- Every output byte, including the HKDF salts (`"agreement"`, `"signing"`),
+- The HKDF salts (`"agreement"`, `"signing"`),
   the scrypt defaults (log₂N 17, r 8, p 1) and the Argon2id defaults
   (t 2, m 19456 KiB, p 1).
 - ECDSA signs `doubleSha256(message)` deterministically (RFC 6979) and

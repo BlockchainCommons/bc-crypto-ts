@@ -16,17 +16,17 @@ export interface ScryptOptions {
    * with the defaults any length ≥ 1 is accepted (the reference's default path).
    */
   readonly dkLen: number;
-  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 63] and below `16·r`. */
+  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 32] and below `16·r`. */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
   readonly r?: number | undefined;
   /** Parallelism. Default 1. `r·p` must be below 2^30. */
   readonly p?: number | undefined;
   /**
-   * JS-only: the working-memory ceiling in bytes the backend enforces
+   * The working-memory ceiling in bytes the backend enforces
    * (`128·r·(N + p + 1)` bytes are needed). Default a little over 1 GiB
-   * (`128·8·(2^20 + 2)`); the reference allocates whatever the parameters
-   * imply, so pass a larger value to derive with parameters above the default.
+   * (`128·8·(2^20 + 2)`); the reference has no configurable ceiling. Raising maxmem does not bypass
+   * the backend's logN limit or the runtime's allocation limits.
    */
   readonly maxmem?: number | undefined;
 }
@@ -36,7 +36,7 @@ const SCRYPT_MAX_DKLEN = 0xffffffff * 32;
 
 /**
  * @throws {CryptoError} `InvalidParameter` when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 63] or not below `16·r`
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -50,7 +50,7 @@ export function scrypt(
   const dkLen = parameterised
     ? expectInt("scrypt dkLen", options.dkLen, 10, 64)
     : expectInt("scrypt dkLen", options.dkLen, 1, SCRYPT_MAX_DKLEN);
-  const logN = expectInt("scrypt logN", options.logN ?? 17, 1, 63);
+  const logN = expectInt("scrypt logN", options.logN ?? 17, 1, 32);
   const r = expectInt("scrypt r", options.r ?? 8, 1, U32_MAX);
   const p = expectInt("scrypt p", options.p ?? 1, 1, U32_MAX);
   // The two shape rules of RFC 7914 §2 that the reference's `scrypt::Params::new` enforces.
