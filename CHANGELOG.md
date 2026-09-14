@@ -2,7 +2,7 @@
 
 ## 1.0.0-beta.3 - 2026-09-14
 
-Closes the below divergences from the reference, the published `bc-crypto` (tag 0.14.0).
+Closes the following divergences from the reference, the published `bc-crypto` (tag 0.14.0).
 
 ### Changed (breaking)
 
@@ -55,30 +55,6 @@ Closes the below divergences from the reference, the published `bc-crypto` (tag 
 - **PBKDF2 `dkLen` up to (2^32 − 1)·hLen** (RFC 8018 §5.2; 32 or 64), where
   the port stopped at 2^32 − 1.
 - `chacha20` returns `Uint8Array<ArrayBuffer>`.
-
-### Validation
-
-- The harness builds against the published crate, unpatched, has no
-  exception list, and parses every argument with the Rust width before the
-  call: a wrong-length
-  fixed argument, sealed data under 16 bytes, a number outside `u8`, `u32`
-  or `usize`, and raw ChaCha20 are js-only, never matches or mismatches.
-  The golden file grew from 679 to 807 vectors: point (de)compression and
-  AEAD decryption success paths, 66 non-canonical Ed25519 A and R rows, 19
-  undecodable-key and r/s ∈ {0, n} verify rows, 28 low-order X25519 rows,
-  6 hybrid keys, the logN 17 r 64 row and 3 width probes. `--full` replays the whole corpus (1195) and `heavy.json` the
-  logN 22, r 9 vector; CI runs all three, plus the heavy vector on Bun and
-  Node. Results: `807 vectors - 793 match, 14 js-only, 0 MISMATCH`;
-  `1195 - 1180, 15, 0`; `1 - 1, 0, 0`.
-- Tests: an argument-type property over every exported function, the
-  Ed25519 decoder boundary (dalek decodes 26 of the 40 non-canonical
-  encodings and so does the port: `false` for those as A, `InvalidData` for
-  the 14 it rejects, `false` for all 40 as R), a verify-outcome property (a
-  boolean, or `InvalidData` naming the key), the Ed25519 packed and fallback generator
-  paths, malformed generators propagating rand's `InvalidGenerator`
-  unwrapped, backend spies for the PBKDF2 bound and the scrypt ceiling, and
-  the paged core against noble under one-block, three-block and default
-  pages plus the RFC 7914 vectors.
 
 ## 1.0.0-beta.2 - 2026-09-12
 
