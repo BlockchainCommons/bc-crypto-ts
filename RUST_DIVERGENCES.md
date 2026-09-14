@@ -26,7 +26,7 @@ For every input the reference accepts and a JavaScript runtime can hold, outputs
 
 ### D1. PBKDF2 output past (2^32 − 1)·hLen
 
-`pbkdf2Sha256`, `pbkdf2Sha512` and scrypt's default path stop at (2^32 − 1)·hLen output bytes (RFC 8018 §5.2) and throw `InvalidParameter` beyond it. The reference accepts a longer `key_len`, and its `pbkdf2` 0.12.2 backend's `u32` block counter then overflows: a panic with overflow checks, a wrapped counter (the output repeats from the start) without them. `scrypt` 0.11.0 admits 31 further bytes that reach that block. The port does not reproduce this because the reference's result depends on its build profile and needs at least 137 GiB of output. An upstream report to RustCrypto is pending.
+`pbkdf2Sha256`, `pbkdf2Sha512` and scrypt's default path stop at (2^32 − 1)·hLen output bytes (RFC 8018 §5.2) and throw `InvalidParameter` beyond it. The reference accepts a longer `key_len`, and its `pbkdf2` 0.12.2 backend's `u32` block counter then overflows: a panic with overflow checks, a wrapped counter (the output repeats from the start) without them. `scrypt` 0.11.0 admits 31 further bytes that reach that block. The port does not reproduce this because the reference's result depends on its build profile and needs at least 137 GiB of output.
 
 ## Maintenance
 
