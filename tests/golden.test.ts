@@ -67,7 +67,7 @@ describe("golden: hashes", () => {
 describe("golden: symmetric", () => {
   for (const [n, d] of INPUTS) {
     it(`chacha20poly1305 (${n})`, () => {
-      // Snapshot layout is [ct, tag, ctA, tagA] from the pre-redesign tuple API.
+      // Snapshot layout: [ciphertext, tag, ciphertext with aad, tag with aad].
       const sealed = c.chacha20Poly1305.encrypt(KEY, NONCE, d);
       const sealedA = c.chacha20Poly1305.encrypt(KEY, NONCE, d, { aad: AAD });
       const split = (s: Uint8Array) => [
@@ -164,11 +164,10 @@ describe("golden: keys and signatures", () => {
 });
 
 /**
- * Freeze additions: today's behaviour on inputs known to have edge-case
- * outcomes, recorded verbatim so future changes show up as snapshot diffs
- * rather than silent drift.
+ * Edge cases: outcomes on inputs at the boundary of each primitive's domain,
+ * recorded verbatim so a change is a snapshot diff.
  */
-describe("golden: freeze additions (B1–B5)", () => {
+describe("golden: edge cases", () => {
   const fill = (n: number, v: number): Uint8Array => new Uint8Array(n).fill(v);
   const one = (n: number): Uint8Array => {
     const u = new Uint8Array(n);
@@ -194,20 +193,20 @@ describe("golden: freeze additions (B1–B5)", () => {
   const nonCanonicalRSignature = new Uint8Array(64);
   nonCanonicalRSignature.set(nonCanonicalIdentity, 0);
 
-  it("B1: ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict)", () => {
+  it("ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict)", () => {
     expect([
       outcome(() => c.ed25519.verify(identity, identitySignature, msg)),
       outcome(() => c.ed25519.verify(nonCanonicalIdentity, identitySignature, msg)),
       outcome(() => c.ed25519.verify(identity, nonCanonicalRSignature, msg)),
     ]).toMatchSnapshot();
   });
-  it("B2: x25519.sharedKey with a low-order public key (the reference's NonContributoryKey)", () => {
+  it("x25519.sharedKey with a low-order public key (the reference's NonContributoryKey)", () => {
     expect([
       outcome(() => c.x25519.sharedKey(PRIV, new Uint8Array(32))),
       outcome(() => c.x25519.sharedKey(PRIV, one(32))),
     ]).toMatchSnapshot();
   });
-  it("B3: verify on malformed keys and signatures of the right length (false on both sides)", () => {
+  it("verify on malformed keys and signatures of the right length (false on both sides)", () => {
     const ecdsaPub = c.ecdsa.publicKey(PRIV);
     expect([
       outcome(() => c.ecdsa.verify(ecdsaPub, fill(64, 0xff), msg)),
@@ -222,7 +221,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       outcome(() => c.ed25519.verify(c.ed25519.publicKey(PRIV), fill(64, 0xff), msg)),
     ]).toMatchSnapshot();
   });
-  it("B4: domain faults are reported as CryptoError", () => {
+  it("domain faults are reported as CryptoError", () => {
     const n = Uint8Array.from(
       Buffer.from("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", "hex"),
     );
@@ -261,7 +260,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       ),
     ).toMatchSnapshot();
   });
-  it("B5: scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
+  it("scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
     expect([
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8, logN: 4 })),
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8 })),

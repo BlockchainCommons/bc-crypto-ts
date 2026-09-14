@@ -132,8 +132,8 @@ export default [
         "error",
         { considerDefaultExhaustiveForUnions: true },
       ],
-      // A value and a type may intentionally share a name (e.g. `MajorType`,
-      // `Cbor`, `EdgeType`); tsc already rejects genuine illegal redeclarations.
+      // A value and a type may intentionally share a name; tsc already rejects
+      // genuine illegal redeclarations.
       "no-redeclare": "off",
       "@typescript-eslint/no-redeclare": "off",
       "@typescript-eslint/no-namespace": "off",

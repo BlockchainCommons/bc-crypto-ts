@@ -1,32 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`golden: freeze additions (B1–B5) > B1: ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict) 1`] = `
-[
-  "false",
-  "false",
-  "false",
-]
-`;
-
-exports[`golden: freeze additions (B1–B5) > B2: x25519.sharedKey with a low-order public key (the reference's NonContributoryKey) 1`] = `
-[
-  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
-  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
-]
-`;
-
-exports[`golden: freeze additions (B1–B5) > B3: verify on malformed keys and signatures of the right length (false on both sides) 1`] = `
-[
-  "false",
-  "false",
-  "false",
-  "false",
-  "false",
-  "false",
-]
-`;
-
-exports[`golden: freeze additions (B1–B5) > B4: domain faults are reported as CryptoError 1`] = `
+exports[`golden: edge cases > domain faults are reported as CryptoError 1`] = `
 {
   "argon2id dkLen 3": "throw:CryptoError:argon2id dkLen must be an integer in [4, 4294967295], got 3",
   "argon2id salt 4": "throw:CryptoError:argon2id salt must be at least 8 bytes, got 4",
@@ -47,10 +21,36 @@ exports[`golden: freeze additions (B1–B5) > B4: domain faults are reported as 
 }
 `;
 
-exports[`golden: freeze additions (B1–B5) > B5: scrypt output length below the reference's opt bound (parameterised: throw; default: accepted) 1`] = `
+exports[`golden: edge cases > ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict) 1`] = `
+[
+  "false",
+  "false",
+  "false",
+]
+`;
+
+exports[`golden: edge cases > scrypt output length below the reference's opt bound (parameterised: throw; default: accepted) 1`] = `
 [
   "throw:CryptoError:scrypt dkLen must be an integer in [10, 64], got 8",
   "8685bd02e2cada6a",
+]
+`;
+
+exports[`golden: edge cases > verify on malformed keys and signatures of the right length (false on both sides) 1`] = `
+[
+  "false",
+  "false",
+  "false",
+  "false",
+  "false",
+  "false",
+]
+`;
+
+exports[`golden: edge cases > x25519.sharedKey with a low-order public key (the reference's NonContributoryKey) 1`] = `
+[
+  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
+  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
 ]
 `;
 

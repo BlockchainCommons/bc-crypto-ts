@@ -7,7 +7,7 @@
  * "1"/"0", or `throw:<ErrorName>` (message-independent), except that an
  * `x25519Shared` `CryptoError` renders as `throw:<code>|<message>`.
  *
- * Recipe semantics are FROZEN.
+ * Recipe semantics are fixed: the committed vectors depend on them.
  */
 
 export type Bytes = { hex: string } | { cycle: number; start?: number } | { text: string };
@@ -216,7 +216,7 @@ export function materialize(api: VectorApi, r: Recipe): string {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** The pre-redesign surface (frozen baseline bundle; its own inlined rand). */
+/** The `@bcts/crypto` surface of the frozen baseline bundle (with its own inlined rand). */
 export function baselineAdapterFor(m: any, randBaseline: any): VectorApi {
   return {
     sha256: m.sha256,
@@ -238,7 +238,7 @@ export function baselineAdapterFor(m: any, randBaseline: any): VectorApi {
     chacha20: () => {
       throw new Error("no baseline analog");
     },
-    // The pre-redesign AEAD returns [ciphertext, tag] and decrypt takes the tag
+    // The baseline AEAD returns [ciphertext, tag] and decrypt takes the tag
     // last; the vector representation is the concatenation ciphertext || tag.
     aeadEncrypt: (pt, k, n, aad) => {
       const [ct, tag] =
@@ -270,7 +270,7 @@ export function baselineAdapterFor(m: any, randBaseline: any): VectorApi {
     schnorrVerify: m.schnorrVerify,
     ed25519Pub: m.ed25519PublicKeyFromPrivateKey,
     ed25519Sign: m.ed25519Sign,
-    // Pre-redesign ed25519Verify takes (pub, msg, sig), unlike ecdsa/schnorr (pub, sig, msg).
+    // The baseline's ed25519Verify takes (pub, msg, sig), unlike ecdsa/schnorr (pub, sig, msg).
     ed25519Verify: (pub, sig, msg) => m.ed25519Verify(pub, msg, sig),
     newPriv: (alg, rng) =>
       ({
@@ -278,20 +278,13 @@ export function baselineAdapterFor(m: any, randBaseline: any): VectorApi {
         ed25519: m.ed25519NewPrivateKeyUsing,
         x25519: m.x25519NewPrivateKeyUsing,
       })[alg](rng),
-    // The baseline's `*Using(rng)` call rng.randomData(n); the OLD rand interface provides it.
+    // The baseline's `*Using(rng)` call rng.randomData(n), which the baseline rand provides.
     makeRng: (seed) => new randBaseline.SeededRandomNumberGenerator(seed),
   };
 }
 
-/** The working tree, using the current (redesigned) names. */
-export function redesignedAdapterFor(m: any, rand: any): VectorApi {
-  if (typeof m.aeadChaCha20Poly1305Encrypt === "function") {
-    // Pre-redesign flat surface, but the redesigned rand: build a generator
-    // whose fillBytes drives the old `*Using` functions via randomBytes(n, { rng }).
-    const api = baselineAdapterFor(m, undefined);
-    api.makeRng = (seed) => new rand.SeededRng(seed);
-    return api;
-  }
+/** This package's surface (the working tree or its build). */
+export function currentAdapterFor(m: any, rand: any): VectorApi {
   return {
     sha256: m.sha256,
     doubleSha256: m.doubleSha256,

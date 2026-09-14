@@ -1,5 +1,6 @@
 /**
- * Property tests: round-trips and tamper detection over generated inputs.
+ * Property tests over generated inputs: round-trips, tamper detection, fault
+ * types, argument validation and strict verification.
  */
 import fc from "fast-check";
 import { runInNewContext } from "node:vm";
@@ -99,7 +100,7 @@ describe("signature round-trips", () => {
   });
 });
 
-describe("properties for B1, B2, B4", () => {
+describe("faults and strict verification", () => {
   const isCryptoError = (f: () => unknown): boolean => {
     try {
       f();
@@ -108,7 +109,7 @@ describe("properties for B1, B2, B4", () => {
       return c.CryptoError.isCryptoError(e);
     }
   };
-  it("every fault raised by the package is a CryptoError (B4)", () => {
+  it("every fault raised by the package is a CryptoError", () => {
     const zero = new Uint8Array(32);
     const n = Uint8Array.from(
       Buffer.from("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", "hex"),
@@ -176,7 +177,7 @@ describe("properties for B1, B2, B4", () => {
         err.details.what,
     ).toBe("scrypt parameters");
   });
-  it("a small-order or non-canonical Ed25519 public key or R never verifies (B1)", () => {
+  it("a small-order or non-canonical Ed25519 public key or R never verifies", () => {
     const identity = new Uint8Array(32);
     identity[0] = 1;
     const nonCanonicalIdentity = new Uint8Array(32).fill(0xff);
@@ -222,7 +223,7 @@ describe("properties for B1, B2, B4", () => {
       { numRuns: 50 },
     );
   });
-  it("x25519.sharedKey rejects every low-order encoding with NonContributoryKey, the reference's message (B2)", () => {
+  it("x25519.sharedKey rejects every low-order encoding with NonContributoryKey, the reference's message", () => {
     // The nine RFC 7748 §6.1 encodings and the other five high-bit variants of the same
     // seven u values; anything else agrees with noble's ladder.
     const lowOrder = [
@@ -427,7 +428,7 @@ describe("argument types: every byte, options and boolean argument is checked fi
     expect(rejects("crc32 littleEndian", () => c.crc32Bytes(M, { littleEndian: O(1) }))).toBe(true);
     expect(c.crc32Bytes(M, { littleEndian: undefined })).toEqual(c.crc32Bytes(M));
   });
-  it("the executed regressions: engine TypeErrors, silent acceptance, misattribution", () => {
+  it("strings, arrays and missing options are InvalidParameter naming the argument", () => {
     const what = (f: () => unknown): string => {
       try {
         f();
@@ -533,7 +534,7 @@ describe("verify never throws for inputs of the right length", () => {
   });
 });
 
-describe("KDF domains mirrored from the reference's crates (1.0.0-beta.2)", () => {
+describe("KDF domains mirrored from the reference's crates", () => {
   const pw = new Uint8Array(2);
   const salt = new Uint8Array(16).fill(0x50);
   it("scrypt: default and parameterised output-length rules", { timeout: 30_000 }, () => {

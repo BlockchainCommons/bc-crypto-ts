@@ -12,11 +12,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as src from "../src/index.ts";
 import * as rand from "@blockchaincommons/rand";
-import { materialize, redesignedAdapterFor } from "../tests/vectors/recipes.ts";
+import { materialize, currentAdapterFor } from "../tests/vectors/recipes.ts";
 import { allRecipes, goldenRecipes, heavyRecipes } from "../tests/corpus/corpus.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const api = redesignedAdapterFor(src, rand);
+const api = currentAdapterFor(src, rand);
 const args = process.argv.slice(2);
 
 const [recipes, out, label] = (() => {

@@ -10,14 +10,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as src from "../src";
 import * as rand from "@blockchaincommons/rand";
-import { materialize, redesignedAdapterFor, type Recipe } from "./vectors/recipes";
+import { materialize, currentAdapterFor, type Recipe } from "./vectors/recipes";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const { count, vectors } = JSON.parse(readFileSync(join(here, "vectors/heavy.json"), "utf8")) as {
   count: number;
   vectors: { recipe: Recipe; expect: string }[];
 };
-const api = redesignedAdapterFor(src, rand);
+const api = currentAdapterFor(src, rand);
 
 describe.skipIf(process.env["CRYPTO_HEAVY"] !== "1")("heavy vectors (CRYPTO_HEAVY=1)", () => {
   it("fixture is self-consistent", () => {

@@ -10,8 +10,8 @@
  * Bundles src/index.ts as a single ESM file with every @blockchaincommons
  * sibling INLINED, resolving each sibling to ITS frozen baseline bundle
  * (../<repo>/tests/baseline/<pkg>-baseline.mjs) when one exists, so the
- * baseline keeps the pre-redesign behaviour of its dependencies even after
- * they change. Writes tests/baseline/<pkg>-baseline.mjs, the .d.mts API
+ * baseline keeps the behaviour its dependencies had at that commit even
+ * after they change. Writes tests/baseline/<pkg>-baseline.mjs, the .d.mts API
  * snapshot, and README.md with the commit and sha256 pinned.
  */
 import { build } from "tsdown";
@@ -45,8 +45,8 @@ for (const dir of readdirSync(parent)) {
   const depPkgPath = join(parent, dir, "package.json");
   if (!existsSync(depPkgPath)) continue;
   const depName = JSON.parse(readFileSync(depPkgPath, "utf8")).name;
-  // The canonical dcbor is a published, stable dependency: never alias it to
-  // its own (much older) pre-redesign baseline.
+  // dcbor is a published, stable dependency: never alias it to its own
+  // (much older) baseline bundle.
   if (depName !== pkg.name && depName !== "@blockchaincommons/dcbor") alias[depName] = join(bl, f);
 }
 
@@ -79,10 +79,10 @@ writeFileSync(
   `# Frozen baseline build
 
 \`${short}-baseline.mjs\` is the self-contained ESM bundle of \`${pkg.name}\` built from
-commit \`${commit}\`, the pre-redesign wire-format reference. Sibling
+commit \`${commit}\`, the \`@bcts/${short}\` wire-format reference. Sibling
 \`@blockchaincommons/*\` packages are INLINED from their own frozen baseline
 bundles (${Object.keys(alias).length ? Object.keys(alias).join(", ") : "none"}), so this bundle keeps the
-pre-redesign behaviour of its dependencies after they change.
+behaviour its dependencies had at that commit.
 \`${short}-baseline.d.mts\` is the public surface at that commit.
 
 \`tests/differential.test.ts\` runs every corpus recipe through this bundle and

@@ -55,8 +55,9 @@ describe("scrypt core", () => {
     );
   });
   it("pages hold whole blocks and the last page may be short", () => {
-    // N = 5 blocks of 128·r bytes in pages of 2 blocks: the core must still
-    // address every block; a wrong page size would corrupt the mix.
+    // Blocks of 256 bytes (r = 2) in pages of 1, 2, 2 (700 bytes rounds down to
+    // whole blocks), 4 and 16 blocks, with a short last page for B: every block
+    // must be addressed through its page.
     const pw = utf8("pw");
     const salt = utf8("salt");
     const want = hex(nobleScrypt(pw, salt, { N: 8, r: 2, p: 3, dkLen: 32 }));

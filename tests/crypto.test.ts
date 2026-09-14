@@ -1,4 +1,4 @@
-// Tests ported from bc-crypto-rust, expressed against the redesigned API.
+// The reference's unit tests and test vectors, plus this package's own contracts.
 
 import {
   crc32,
@@ -31,7 +31,6 @@ import {
   testRandomBytes,
 } from "@blockchaincommons/rand";
 
-// Helper to convert hex string to Uint8Array
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
@@ -40,7 +39,6 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
-// Helper to convert Uint8Array to hex string
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -123,7 +121,6 @@ describe("Hash functions", () => {
       "13485067e21af17c0900f70d885f02593c0e61e46f86450e4a0201a54c14db76",
     );
 
-    // Different salt produces different output
     const differentSalt = hexToBytes("0d0e0f101112131415161718");
     const differentKey = hkdfSha256(keyMaterial, differentSalt, { dkLen: keyLen });
     expect(bytesToHex(derivedKey)).not.toBe(bytesToHex(differentKey));
@@ -152,7 +149,6 @@ describe("Symmetric encryption", () => {
     expect(bytesToHex(ciphertext)).toBe(bytesToHex(expectedCiphertext));
     expect(bytesToHex(authTag)).toBe(bytesToHex(expectedAuthTag));
 
-    // Decrypt and verify
     const decrypted = chacha20Poly1305.decrypt(key, nonce, sealed, { aad });
     expect(new TextDecoder().decode(decrypted)).toBe(
       "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it.",
@@ -288,7 +284,6 @@ describe("ECDSA", () => {
     const isValid = ecdsa.verify(publicKey, signature, message);
     expect(isValid).toBe(true);
 
-    // Verify with wrong message fails
     const wrongMessage = new TextEncoder().encode("Wrong message");
     const isInvalid = ecdsa.verify(publicKey, signature, wrongMessage);
     expect(isInvalid).toBe(false);
@@ -315,10 +310,9 @@ describe("ECDSA", () => {
 });
 
 describe("Schnorr", () => {
-  // Mirrors Rust `schnorr_signing::tests::test_schnorr_sign` (line 64)
-  // exactly — uses `make_fake_random_number_generator()` for both the
-  // private-key derivation and the auxiliary randomness, then asserts
-  // the byte-identical signature.
+  // Mirrors the reference's `schnorr_signing::tests::test_schnorr_sign`: the
+  // seeded test generator supplies both the private key and the auxiliary
+  // randomness, and the signature is byte-identical.
   test("test_schnorr_sign (deterministic, matches Rust)", () => {
     const rng = SeededRng.forTesting();
     const privateKey = ecdsa.generatePrivateKey({ rng });
@@ -451,7 +445,7 @@ describe("Schnorr", () => {
     expect(isValid).toBe(true);
   });
 
-  // BIP-340 Test Vector 5 - public key not on the curve (should fail/throw)
+  // BIP-340 Test Vector 5 - public key not on the curve
   test("test_bip340_vector_5", () => {
     const publicKey = hexToBytes(
       "EEFDEA4CDB677750A420FEE807EACF21EB9898AE79B9768766E4FAA04A2D4A34",
@@ -461,14 +455,7 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E17776969E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    // This should either throw or return false
-    let result: boolean;
-    try {
-      result = schnorr.verify(publicKey, signature, message);
-    } catch {
-      result = false;
-    }
-    expect(result).toBe(false);
+    expect(schnorr.verify(publicKey, signature, message)).toBe(false);
   });
 
   // BIP-340 Test Vector 6 - has_even_y(R) is false
@@ -583,7 +570,7 @@ describe("Schnorr", () => {
     expect(isValid).toBe(false);
   });
 
-  // BIP-340 Test Vector 14 - public key is not a valid X coordinate (should fail/throw)
+  // BIP-340 Test Vector 14 - public key is not a valid X coordinate
   test("test_bip340_vector_14", () => {
     const publicKey = hexToBytes(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
@@ -593,14 +580,7 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E17776969E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    // This should either throw or return false
-    let result: boolean;
-    try {
-      result = schnorr.verify(publicKey, signature, message);
-    } catch {
-      result = false;
-    }
-    expect(result).toBe(false);
+    expect(schnorr.verify(publicKey, signature, message)).toBe(false);
   });
 
   // BIP-340 Test Vector 15 - empty message
@@ -686,9 +666,9 @@ describe("Schnorr", () => {
 });
 
 describe("Ed25519", () => {
-  // Mirrors Rust `ed25519_signing::tests::test_ed25519_signing` (line 51)
-  // exactly — fake_random_data(32) for the private key, then asserts both
-  // the public key and the signature byte-identically.
+  // Mirrors the reference's `ed25519_signing::tests::test_ed25519_signing`:
+  // `fake_random_data(32)` for the private key, then the public key and the
+  // signature, byte-identical.
   test("test_ed25519_signing (deterministic, matches Rust)", () => {
     const MESSAGE = new TextEncoder().encode(
       "Ladies and Gentlemen of the class of '99: If I could offer you only " +
@@ -727,7 +707,6 @@ describe("Ed25519", () => {
 
     expect(ed25519.verify(publicKey, signature, message)).toBe(true);
 
-    // Verify with wrong message fails
     const wrongMessage = new TextEncoder().encode("Wrong message");
     expect(ed25519.verify(publicKey, signature, wrongMessage)).toBe(false);
   });
@@ -839,9 +818,8 @@ describe("Scrypt", () => {
     expect(bytesToHex(key1)).toBe(bytesToHex(key2)); // Deterministic
   });
 
-  // Cross-platform parity vector — pins the byte output of `scrypt()` with
-  // the recommended params (logN=17, r=8, p=1) that match Rust
-  // `bc_crypto::scrypt`. Drift here means cross-impl interop is broken.
+  // The reference's `bc_crypto::scrypt` output with its recommended
+  // parameters (logN 17, r 8, p 1).
   test("scrypt cross-platform vector (matches Rust defaults)", { timeout: 10_000 }, () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("salt");
@@ -895,9 +873,8 @@ describe("Argon2id", () => {
     expect(bytesToHex(key1)).toBe(bytesToHex(key2)); // Deterministic
   }, 30_000);
 
-  // Cross-platform parity vector — pins the byte output of `argon2id()` with
-  // the `Argon2::default()` params (t=2, m=19456, p=1) that Rust
-  // `bc_crypto::argon2id` uses. Drift here means cross-impl interop is broken.
+  // The reference's `bc_crypto::argon2id` output with `Argon2::default()`
+  // (t 2, m 19456 KiB, p 1).
   test("argon2id cross-platform vector (matches Rust defaults)", () => {
     const password = new TextEncoder().encode("password");
     const salt = new TextEncoder().encode("example salt");

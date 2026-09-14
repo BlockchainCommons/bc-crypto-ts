@@ -14,14 +14,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as src from "../src/index.ts";
 import * as rand from "@blockchaincommons/rand";
-import { materialize, redesignedAdapterFor, type Recipe } from "../tests/vectors/recipes.ts";
+import { materialize, currentAdapterFor, type Recipe } from "../tests/vectors/recipes.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const { count, vectors } = JSON.parse(
   readFileSync(join(root, "tests/vectors/heavy.json"), "utf8"),
 ) as { count: number; vectors: { recipe: Recipe; expect: string }[] };
 if (vectors.length !== count) throw new Error("heavy.json count does not match its vectors");
-const api = redesignedAdapterFor(src, rand);
+const api = currentAdapterFor(src, rand);
 
 let mismatch = 0;
 for (const v of vectors) {

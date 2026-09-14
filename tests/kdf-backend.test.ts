@@ -27,7 +27,7 @@ describe("PBKDF2 dkLen up to (2^32 − 1)·hLen; iterations 0 stays InvalidParam
   afterEach(() => {
     vi.mocked(pbkdf2).mockReset();
   });
-  it("a dkLen above the old u32 cap reaches noble (2^32, no derivation)", () => {
+  it("a dkLen above 2^32 − 1 reaches noble (2^32, no derivation)", () => {
     vi.mocked(pbkdf2).mockImplementationOnce(() => new Uint8Array(0));
     c.pbkdf2Sha256(pw, salt, { iterations: 1, dkLen: 2 ** 32 });
     expect(vi.mocked(pbkdf2)).toHaveBeenCalledTimes(1);

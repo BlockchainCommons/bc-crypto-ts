@@ -234,14 +234,13 @@ const RFC8032: [string, string, string][] = [
     "af82",
   ],
 ];
-/** Report B1: the identity point (small order), canonical and non-canonical (y = p + 1). */
+/** The identity point (small order), canonical and non-canonical (y = p + 1). */
 const ED_IDENTITY = "01" + "00".repeat(31);
 const ED_IDENTITY_NONCANONICAL = "ee" + "ff".repeat(30) + "7f";
 const ED_ZERO_S = "00".repeat(32);
-/** Report B3: malformed keys and signatures of the right length. */
+/** Malformed keys and signatures of the right length. */
 const FF32 = "ff".repeat(32);
 const FF64 = "ff".repeat(64);
-/** Report B2: low-order X25519 public keys. */
 /**
  * Every encoding of a low-order point (RFC 7748 §6.1, little-endian): 0, 1,
  * the two order-8 points, p − 1, p, p + 1, and (bit 255 is masked on both
@@ -289,7 +288,7 @@ const edEncoding = (y: bigint, sign: boolean): string =>
  * Non-canonical `y = p + k` encodings that dalek's `CompressedEdwardsY::decompress`
  * still decodes (it reduces y first; the reduced point has a square root), and the
  * ones it rejects. Executed against noble's `Point.fromBytes(enc, true)`, which
- * applies the same rule; CRYPTO-04's boundary test pins both lists.
+ * applies the same rule; the decoder-boundary test pins both lists.
  */
 export const ED_NONCANONICAL_DECODABLE_K: number[] = [0, 1, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18];
 export const ED_NONCANONICAL_UNDECODABLE_K: number[] = [2, 7, 8, 11, 12, 13, 17];
@@ -379,7 +378,7 @@ function* verify(): Generator<Recipe> {
   yield verifyOf("ed25519", ed.pub, edEncoding(ED_P - 1n, true) + ed.sig.slice(64), ed.msg);
 }
 /**
- * Success paths the corpus never pinned against the reference: point decompression and
+ * Success paths: point decompression and
  * compression with values, and AEAD decryption of literal sealed buffers (key 00…1f,
  * nonce 00…0b). Every input is a literal, so a regression on either side is a MISMATCH.
  */
@@ -427,7 +426,7 @@ function* faults(): Generator<Recipe> {
   yield { k: "ecdsaCompress", pub: hx("06" + SECP_GX + SECP_NEG_GY) };
   yield { k: "ecdsaCompress", pub: hx("05" + SECP_GX + SECP_GY) };
   yield { k: "ecdsaCompress", pub: hx("06" + SECP_P_PLUS_1 + SECP_GY) };
-  // Above noble's former default memory ceiling (~1 GiB): the reference has none.
+  // 1.07 GiB of working memory, above noble's own default ceiling (~1 GiB); the reference has none.
   yield { k: "scrypt", pw, salt, len: 32, n: 17, r: 64, p: 1 };
   // Scalar, point, and KDF domain checks.
   yield { k: "ecdsaPub", priv: zero };
@@ -451,7 +450,7 @@ function* faults(): Generator<Recipe> {
   yield { k: "scrypt", pw, salt, len: 65, n: 4, r: 8, p: 1 };
   yield { k: "scrypt", pw, salt, len: 10, n: 4, r: 8, p: 1 };
   yield { k: "scrypt", pw, salt, len: 65 };
-  // Parity the corpus never pinned: an X25519 public key with bit 255 set, an empty HKDF salt.
+  // An X25519 public key with bit 255 set, and an empty HKDF salt.
   yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx("ff".repeat(32)) };
   yield { k: "hkdfSha256", key: cyc(32, 0x10), salt: cyc(0), len: 32 };
   yield { k: "hkdfSha512", key: cyc(32, 0x10), salt: cyc(0), len: 32 };
