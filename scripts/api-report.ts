@@ -9,6 +9,11 @@
  * transient copy is made inside dist/ first. The committed report
  * (api/<pkg>.api.md) is the reviewable record of the public surface: every
  * surface change is a visible diff here and in api/index.d.mts.
+ *
+ * `ajv` is a direct devDependency for this script's sake: api-extractor's
+ * `ajv-draft-04` wants ajv 8 as an optional peer, which bun does not nest, so
+ * without the direct dependency eslint's ajv 6 is what gets hoisted and the
+ * report fails with "Cannot find module 'ajv/dist/core'".
  */
 
 import { copyFileSync, existsSync, readFileSync, rmSync } from "node:fs";
