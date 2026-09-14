@@ -13,10 +13,10 @@ exports[`golden: edge cases > domain faults are reported as CryptoError 1`] = `
   "hkdfSha256 length 1.5": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 1.5",
   "hkdfSha256 length 8161": "throw:CryptoError:hkdf dkLen must be an integer in [0, 8160], got 8161",
   "pbkdf2Sha256 dkLen 0": "",
-  "pbkdf2Sha256 iterations 0": "throw:CryptoError:pbkdf2 iterations must be an integer in [1, 4294967295], got 0",
+  "pbkdf2Sha256 iterations -1": "throw:CryptoError:pbkdf2 iterations must be an integer in [0, 4294967295], got -1",
   "schnorr.publicKey(0)": "throw:CryptoError:Schnorr private key is not a valid scalar (must be in [1, n - 1])",
   "scrypt dkLen 0": "throw:CryptoError:scrypt dkLen must be an integer in [1, 137438953440], got 0",
-  "scrypt logN 0": "throw:CryptoError:scrypt logN must be an integer in [1, 32], got 0",
+  "scrypt logN -1": "throw:CryptoError:scrypt logN must be an integer in [0, 32], got -1",
   "scrypt r 1.5": "throw:CryptoError:scrypt r must be an integer in [1, 4294967295], got 1.5",
 }
 `;
@@ -36,22 +36,30 @@ exports[`golden: edge cases > scrypt output length below the reference's opt bou
 ]
 `;
 
-exports[`golden: edge cases > verify on malformed keys and signatures of the right length (false on both sides) 1`] = `
+exports[`golden: edge cases > verify on malformed keys and signatures of the right length (false, or InvalidData where the reference's parse panics) 1`] = `
 [
-  "false",
-  "false",
-  "false",
+  "throw:CryptoError:ECDSA signature has r or s outside [0, n - 1]",
+  "throw:CryptoError:ECDSA public key is not a point on the curve",
+  "throw:CryptoError:Schnorr public key is not a point on the curve",
   "false",
   "false",
   "false",
 ]
 `;
 
-exports[`golden: edge cases > x25519.sharedKey with a low-order public key (the reference's NonContributoryKey) 1`] = `
+exports[`golden: edge cases > x25519.sharedKey with a low-order public key (the reference's all-zero secret: one key) 1`] = `
 [
-  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
-  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
+  "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e",
+  "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e",
 ]
+`;
+
+exports[`golden: edge cases > zero KDF costs derive, as the reference's crates do (scrypt N = 1; PBKDF2 0 rounds as 1) 1`] = `
+{
+  "pbkdf2Sha256 iterations 0": "09d8b84188254ca4b82c68202c11d368569d655b6aa0c1909344534394a05a33",
+  "pbkdf2Sha256 iterations 1": "09d8b84188254ca4b82c68202c11d368569d655b6aa0c1909344534394a05a33",
+  "scrypt logN 0": "5a81ca47d8c099b1c6e0d5c191ea5d81d1775626fe9ca10acf2fae5f3c28975e",
+}
 `;
 
 exports[`golden: hashes > hmac (1) 1`] = `

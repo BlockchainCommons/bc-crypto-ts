@@ -14,11 +14,56 @@ import * as baselineMod from "./baseline/crypto-baseline.mjs";
 import * as randBaseline from "./baseline/rand-baseline.mjs";
 import * as src from "../src";
 import * as rand from "@blockchaincommons/rand";
-import { materialize, baselineAdapterFor, currentAdapterFor, type Recipe } from "./vectors/recipes";
-import { categories, noBaseline } from "./corpus/corpus";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { ed25519 as nobleEd25519 } from "@noble/curves/ed25519.js";
+import { bytesToNumberBE } from "@noble/curves/utils.js";
+import {
+  materialize,
+  materializeBytes,
+  baselineAdapterFor,
+  currentAdapterFor,
+  type Bytes,
+  type Recipe,
+} from "./vectors/recipes";
+import {
+  categories,
+  noBaseline,
+  X25519_LOW_ORDER,
+  X25519_LOW_ORDER_HIGH_BIT,
+} from "./corpus/corpus";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const BASELINE_SHA256 = "d3a5a82546fd0424232ba32ea1c1bd485e08f35f3f241edc90c8476fb1559655";
+
+/** The reference's key parses, `.expect`ed there (a panic): what the tree reports as `InvalidData`. */
+const parses = (f: () => unknown): boolean => {
+  try {
+    f();
+    return true;
+  } catch {
+    return false;
+  }
+};
+const secpKeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 33 || parses(() => secp256k1.Point.fromBytes(k));
+};
+const xOnlyKeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 32 || parses(() => secp256k1.Point.fromBytes(Uint8Array.of(2, ...k)));
+};
+const ed25519KeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 32 || parses(() => nobleEd25519.Point.fromBytes(k, true));
+};
+const compactSigParses = (b: Bytes): boolean => {
+  const s = materializeBytes(b);
+  const n = secp256k1.Point.Fn.ORDER;
+  return (
+    s.length !== 64 ||
+    (bytesToNumberBE(s.subarray(0, 32)) < n && bytesToNumberBE(s.subarray(32)) < n)
+  );
+};
 
 /**
  * Where the tree deliberately differs from the baseline. Within a category, an
@@ -49,6 +94,34 @@ const ALLOWED_DIFFERENCES: { id: string; matches: (r: Recipe) => boolean }[] = [
       "hex" in r.sig &&
       (r.pub.hex === "01" + "00".repeat(31) || r.pub.hex === "ee" + "ff".repeat(30) + "7f") &&
       r.sig.hex.endsWith("00".repeat(32)),
+  },
+  {
+    // The reference `.expect`s its public-key parses and ECDSA's compact
+    // signature parse: an undecodable key, or an ECDSA r or s ≥ n, is
+    // `InvalidData` on the tree where the baseline returned `false`.
+    id: "verify-parse-panics",
+    matches: (r) =>
+      (r.k === "ecdsaVerify" && (!secpKeyParses(r.pub) || !compactSigParses(r.sig))) ||
+      (r.k === "schnorrVerify" && !xOnlyKeyParses(r.pub)) ||
+      (r.k === "ed25519Verify" && !ed25519KeyParses(r.pub)),
+  },
+  {
+    // A low-order X25519 peer derives the reference's one key (HKDF of the
+    // all-zero secret x25519-dalek's unchecked `diffie_hellman` gives); the
+    // baseline threw.
+    id: "x25519-low-order-peer",
+    matches: (r) =>
+      r.k === "x25519Shared" &&
+      "hex" in r.pub &&
+      [...X25519_LOW_ORDER, ...X25519_LOW_ORDER_HIGH_BIT].includes(r.pub.hex),
+  },
+  {
+    // PBKDF2 `iterations` 0 and scrypt `logN` 0 derive (the reference's
+    // crates run 0 rounds as 1, and N = 1); the baseline's backends refused both.
+    id: "zero-cost-kdf",
+    matches: (r) =>
+      ((r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.iter === 0) ||
+      (r.k === "scrypt" && r.n === 0),
   },
   {
     // Seeded Ed25519 key generation draws the reference's packed

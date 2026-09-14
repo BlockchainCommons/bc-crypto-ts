@@ -24,8 +24,11 @@
 - [ ] Pass `Uint8Array`s (a `Buffer` qualifies). A string, plain array or
       `ArrayBuffer` in any byte position is now `CryptoError`
       `InvalidParameter`, named after the argument; encode text explicitly.
-- [ ] A low-order X25519 peer in `x25519.sharedKey` is `NonContributoryKey`
-      (the reference's message), not `InvalidData`.
+- [ ] A low-order X25519 peer in `x25519.sharedKey` derives the reference's
+      fixed key instead of throwing `InvalidData`; reject such peers yourself.
+- [ ] `verify` throws `InvalidData` for a public key the reference cannot
+      parse (and `ecdsa.verify` for r or s ≥ n); a parsed input is still
+      `true`/`false`. PBKDF2 `iterations: 0` and scrypt `logN: 0` derive.
 - [ ] scrypt has no default memory ceiling; pass `maxmem` if you want one.
       PBKDF2 accepts `dkLen` up to (2^32 − 1)·hLen.
 - [ ] Raise your Node floor to **22.12** and TypeScript to **>= 5.7**.
@@ -120,7 +123,6 @@ try {
       case "InvalidSize": // e.details: { what, expected, actual }
       case "InvalidData": // a key, point or signature of the right length that is not valid
       case "InvalidParameter": // an argument outside its domain, including a non-Uint8Array byte argument
-      case "NonContributoryKey": // x25519.sharedKey: a low-order peer key (all-zero shared secret)
     }
   }
 }
@@ -133,17 +135,18 @@ factories. Length checks that used to throw a bare
 `code: "InvalidSize"`; the message names the parameter and the actual length.
 Invalid scalars or points and rejected KDF parameters are reported as
 `CryptoError` (previously the noble library's own `Error`/`RangeError`
-escaped); a low-order X25519 public key is `NonContributoryKey`, with the
-reference's message. Every byte argument is checked to be a `Uint8Array`
+escaped); a low-order X25519 public key derives the reference's fixed key
+(HKDF of the all-zero secret, as x25519-dalek's unchecked `diffie_hellman`
+gives it). Every byte argument is checked to be a `Uint8Array`
 before anything else, and every options object to be an object: a string,
 plain array or `ArrayBuffer` is `InvalidParameter` naming the argument (it
 used to leak an engine `TypeError`, be silently accepted, or blame another
-argument). The three `verify` functions return `false` for a malformed
-signature or public key of the right length and only throw for wrong lengths
-or wrong types; `ed25519.verify` is strict (canonical encodings, no
-small-order key or `R`, and an uncofactored equation). Rust uses the same
-equation but a more permissive public-key decoder; the difference cannot be
-observed through `verify`, which is `false` on both sides for every such key.
+argument). The three `verify` functions throw `InvalidData` for a public key
+the reference's parser rejects (its `.expect`, a panic) and `ecdsa.verify`
+for an r or s ≥ n; any input that parses is `true` or `false`.
+`ed25519.verify` is strict (`verify_strict`: no small-order key or `R`, a
+canonical `R` and `s`, and an uncofactored equation) and decodes the key as
+dalek does, a non-canonical y reduced.
 
 ## 5. Randomness
 

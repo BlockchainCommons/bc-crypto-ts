@@ -79,22 +79,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # The reference is bc-crypto-rust at 4f2b791 plus the input-validation
-      # edits kept in tests/rust-validation/reference/, materialised at the
-      # path the harness's [patch.crates-io] names. This step goes with the
-      # patch once the release that contains the edits ships.
-      - name: Materialise the reference (bc-crypto-rust 4f2b791 + edits)
-        run: |
-          ref="$GITHUB_WORKSPACE/../../../bc-rust/bc-crypto-rust"
-          git clone --quiet https://github.com/BlockchainCommons/bc-crypto-rust.git "$ref"
-          git -C "$ref" checkout --quiet 4f2b791320730578b04943c833c4a9e6c232fc4d
-          git -C "$ref" apply --verbose "$GITHUB_WORKSPACE/tests/rust-validation/reference/bc-crypto-rust-4f2b791-edits.patch"
-
       # The whole corpus (tests/corpus/corpus.ts `allRecipes()`)
       - name: Materialise the full corpus
         run: bun scripts/generate-vectors.ts --full "${{ runner.temp }}/crypto-full-corpus.json"
 
-      # The runner image ships a stable Rust toolchain
+      # The runner image ships a stable Rust toolchain;
       - name: Validate the golden vectors against the reference
         working-directory: tests/rust-validation
         run: cargo run --release --locked -- ../vectors/vectors.json

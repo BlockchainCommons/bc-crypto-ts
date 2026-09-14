@@ -25,8 +25,8 @@ export interface ScryptOptions {
   readonly dkLen: number;
   /**
    * log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in
-   * [1, 32] and below `16·r`; the reference asserts `log_n > 0`, and its
-   * panic is `InvalidParameter` here. Values above 32 need at least 3.3 TiB.
+   * [0, 32] and below `16·r` (`scrypt::Params::new`); 0 is N = 1, which the
+   * reference derives with. Values above 32 need at least 3.3 TiB.
    */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
@@ -49,7 +49,7 @@ const SCRYPT_MAX_DKLEN = 0xffffffff * 32;
 /**
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s and `options` an object; when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [0, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -66,7 +66,7 @@ export function scrypt(
   const dkLen = parameterised
     ? expectInt("scrypt dkLen", options.dkLen, 10, 64)
     : expectInt("scrypt dkLen", options.dkLen, 1, SCRYPT_MAX_DKLEN);
-  const logN = expectInt("scrypt logN", options.logN ?? 17, 1, 32);
+  const logN = expectInt("scrypt logN", options.logN ?? 17, 0, 32);
   const r = expectInt("scrypt r", options.r ?? 8, 1, U32_MAX);
   const p = expectInt("scrypt p", options.p ?? 1, 1, U32_MAX);
   // The two shape rules of RFC 7914 §2 that the reference's `scrypt::Params::new` enforces.
@@ -87,9 +87,10 @@ export function scrypt(
       : expectInt("scrypt maxmem", options.maxmem, 1, Number.MAX_SAFE_INTEGER);
   const N = 2 ** logN;
   const blockBytes = 128 * r;
-  if (blockBytes * N > SINGLE_BUFFER_LIMIT || blockBytes * p > SINGLE_BUFFER_LIMIT) {
-    // Too large for one typed array on JavaScriptCore: the paged core, with
-    // the same `maxmem` rule and error shape as noble's.
+  if (N === 1 || blockBytes * N > SINGLE_BUFFER_LIMIT || blockBytes * p > SINGLE_BUFFER_LIMIT) {
+    // The paged core: for a working buffer too large for one typed array on
+    // JavaScriptCore, and for N = 1, which noble refuses (`2^1 <= N`) and the
+    // reference's crate runs. Same `maxmem` rule and error shape as noble's.
     const memUsed = blockBytes * (N + p + 1);
     if (memUsed > maxmem) {
       throw backendRejected("scrypt parameters")(

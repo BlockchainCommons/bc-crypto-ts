@@ -65,11 +65,10 @@ export class CryptoError extends Error {
     is(code: CryptoErrorCode): boolean;
     static isCryptoError(value: unknown): value is CryptoError;
     override readonly name = "CryptoError";
-    static nonContributoryKey(cause?: unknown): CryptoError;
 }
 
 // @public
-export type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "NonContributoryKey" | "AuthenticationFailed";
+export type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
 
 // @public
 export type CryptoErrorDetails = {
@@ -82,9 +81,6 @@ export type CryptoErrorDetails = {
     readonly what: string;
 } | {
     readonly code: "InvalidParameter";
-    readonly what: string;
-} | {
-    readonly code: "NonContributoryKey";
     readonly what: string;
 } | {
     readonly code: "AuthenticationFailed";

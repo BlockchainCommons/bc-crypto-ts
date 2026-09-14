@@ -2,8 +2,7 @@
 
 ## 1.0.0-beta.3 - 2026-09-14
 
-Closes the divergence from the reference listed below. The reference is the `bc-crypto-rust` (tag 0.14.0), 
-which the Rust harness now patches in; against it there is no exception list.
+Closes the below divergences from the reference, the published `bc-crypto` (tag 0.14.0).
 
 ### Changed (breaking)
 
@@ -17,11 +16,26 @@ which the Rust harness now patches in; against it there is no exception list.
   another argument (`ecdsa.sign(key, "msg")` reported the private key). A
   `Buffer` and a `Uint8Array` from another realm are accepted. `memzero` and
   `memzeroAll` require numeric typed arrays.
-- **A low-order X25519 peer is `NonContributoryKey`.** `x25519.sharedKey`
-  throws the new code with the reference's message, `"X25519 peer key
-  produces an all-zero shared secret"` (its `try_x25519_shared_key` returns
-  `Err(NonContributoryKey)`), instead of `InvalidData` "low-order point".
-  `CryptoErrorCode` and `CryptoErrorDetails` gain the member.
+- **A low-order X25519 peer derives the reference's key.** For every
+  low-order encoding (RFC 7748 §6.1), `x25519.sharedKey` returns HKDF-SHA-256
+  of the all-zero shared secret, `6ddeb1af…8d6e` whatever the private key,
+  as the reference's `x25519_shared_key` does (x25519-dalek's
+  `diffie_hellman`, which it does not check), instead of throwing
+  `InvalidData` "low-order point". Reject such peers yourself before deriving
+  from an untrusted key.
+- **`verify` throws where the reference's parse panics.** `ecdsa.verify`,
+  `schnorr.verify` and `ed25519.verify` throw `InvalidData` naming the key
+  when it does not decode (the reference `.expect`s `PublicKey::from_slice`
+  and `XOnlyPublicKey::from_byte_array` and `.unwrap()`s
+  `VerifyingKey::from_bytes`), and `ecdsa.verify` throws it for an r or s ≥ n
+  (`Signature::from_compact`); all of these were `false`. An input that
+  parses still verifies or not. `ed25519.verify` decodes the key as dalek
+  does (a non-canonical y reduced), so the 26 non-canonical encodings dalek
+  takes are `false` and the 14 it rejects are `InvalidData`.
+- **Zero KDF costs derive.** PBKDF2 `iterations: 0` computes what 1 does (the
+  reference's `pbkdf2` 0.12.2 runs `rounds − 1` rounds after the first block)
+  and scrypt `logN: 0` derives with N = 1 (`scrypt::Params::new` takes
+  `log_n` 0), where both were rejected.
 - **scrypt has no default memory ceiling.** `maxmem` is an opt-in ceiling;
   by default the parameters decide, as in the reference. logN 17, r 64
   (1.07 GiB) now derives (`88d8c775…86f3`), where noble's ~1 GiB default
@@ -39,28 +53,28 @@ which the Rust harness now patches in; against it there is no exception list.
   libsecp256k1's `06`/`07` prefixes when the low bit matches the parity of
   y, as the reference does; a mismatch is `InvalidData`.
 - **PBKDF2 `dkLen` up to (2^32 − 1)·hLen** (RFC 8018 §5.2; 32 or 64), where
-  the port stopped at 2^32 − 1. `iterations` 0 stays `InvalidParameter` at
-  every length, the typed form of the reference's `assert!(iterations > 0)`.
+  the port stopped at 2^32 − 1.
 - `chacha20` returns `Uint8Array<ArrayBuffer>`.
 
 ### Validation
 
-- The harness is patched to the reference tree, has no exception list, and
-  parses every argument with the Rust width before the call: a wrong-length
+- The harness builds against the published crate, unpatched, has no
+  exception list, and parses every argument with the Rust width before the
+  call: a wrong-length
   fixed argument, sealed data under 16 bytes, a number outside `u8`, `u32`
   or `usize`, and raw ChaCha20 are js-only, never matches or mismatches.
   The golden file grew from 679 to 807 vectors: point (de)compression and
   AEAD decryption success paths, 66 non-canonical Ed25519 A and R rows, 19
-  undecodable-key and r/s ∈ {0, n} verify rows, 21 low-order X25519 rows
-  carrying the error value, 6 hybrid keys, the logN 17 r 64 row and 3 width
-  probes. `--full` replays the whole corpus (1195) and `heavy.json` the
+  undecodable-key and r/s ∈ {0, n} verify rows, 28 low-order X25519 rows,
+  6 hybrid keys, the logN 17 r 64 row and 3 width probes. `--full` replays the whole corpus (1195) and `heavy.json` the
   logN 22, r 9 vector; CI runs all three, plus the heavy vector on Bun and
   Node. Results: `807 vectors - 793 match, 14 js-only, 0 MISMATCH`;
   `1195 - 1180, 15, 0`; `1 - 1, 0, 0`.
 - Tests: an argument-type property over every exported function, the
   Ed25519 decoder boundary (dalek decodes 26 of the 40 non-canonical
-  encodings, the port none; `verify` is `false` for all 40 on both sides),
-  a verify-never-throws property, the Ed25519 packed and fallback generator
+  encodings and so does the port: `false` for those as A, `InvalidData` for
+  the 14 it rejects, `false` for all 40 as R), a verify-outcome property (a
+  boolean, or `InvalidData` naming the key), the Ed25519 packed and fallback generator
   paths, malformed generators propagating rand's `InvalidGenerator`
   unwrapped, backend spies for the PBKDF2 bound and the scrypt ceiling, and
   the paged core against noble under one-block, three-block and default

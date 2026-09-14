@@ -15,11 +15,12 @@ describe("Ed25519 uncofactored equation", () => {
 /**
  * The decoder boundary: dalek's `CompressedEdwardsY::decompress` reduces a
  * non-canonical y (`y = p + k` reads as `y = k`) and decodes it when the
- * reduced point has a square root; the tree decodes canonically and rejects
- * every such encoding. noble's `zip215 = true` applies dalek's rule, so the
- * two lists in the corpus pin exactly which encodings each decoder takes.
- * The difference is unobservable through `verify`: both sides return
- * `false` for every one of these keys and for the same encodings as R.
+ * reduced point has a square root. noble's `zip215 = true` applies the same
+ * rule, and the tree decodes A with it: the reference `.unwrap()`s that
+ * decode, so a key dalek rejects is `InvalidData`, and a key it takes is a
+ * small-order point or one whose discrete logarithm nobody knows, `false`.
+ * R is decoded canonically; a non-canonical R is `false` on both sides. The
+ * two lists in the corpus pin exactly which encodings dalek takes.
  */
 describe("Ed25519 decoder boundary (non-canonical y = p + k)", () => {
   const P = (1n << 255n) - 19n;
@@ -70,15 +71,24 @@ describe("Ed25519 decoder boundary (non-canonical y = p + k)", () => {
     expect(re("ec" + "ff".repeat(31))).toBe("ec" + "ff".repeat(30) + "7f");
     expect(re("ed" + "ff".repeat(31))).toBe("00".repeat(31) + "80");
   });
-  it("verify is false for every one of the 40 as A and as R, with the fixture's honest signature", () => {
+  it("as A: the 26 dalek decodes are false, the 14 it rejects are InvalidData; as R: all 40 are false", () => {
     expect(ed25519.verify(pub, sig, msg)).toBe(true);
+    let rejected = 0;
     for (const e of forty) {
-      expect(ed25519.verify(e, sig, msg)).toBe(false);
+      if (decodes(e, true)) {
+        expect(ed25519.verify(e, sig, msg)).toBe(false);
+      } else {
+        expect(() => ed25519.verify(e, sig, msg)).toThrow(
+          "Ed25519 public key is not a point on the curve",
+        );
+        rejected++;
+      }
       const r = new Uint8Array(64);
       r.set(e, 0);
       r.set(sig.subarray(32), 32);
       expect(ed25519.verify(pub, r, msg)).toBe(false);
     }
+    expect(rejected).toBe(14);
   });
 });
 describe("backend boundaries", () => {

@@ -245,8 +245,8 @@ const FF64 = "ff".repeat(64);
  * Every encoding of a low-order point (RFC 7748 §6.1, little-endian): 0, 1,
  * the two order-8 points, p − 1, p, p + 1, and (bit 255 is masked on both
  * sides) two of them with the high bit set. The reference's
- * `try_x25519_shared_key` returns `Err(NonContributoryKey)` for every one;
- * the port throws `CryptoError` `NonContributoryKey` with the same message.
+ * `x25519_shared_key` (x25519-dalek's unchecked `diffie_hellman`) gets the
+ * all-zero secret for every one and derives the same key; so does the port.
  */
 export const X25519_LOW_ORDER: string[] = [
   "0000000000000000000000000000000000000000000000000000000000000000",

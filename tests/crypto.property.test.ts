@@ -125,11 +125,12 @@ describe("faults and strict verification", () => {
       () => c.schnorr.sign(zero, pw, { auxRand: k32 }),
       () => c.ecdsa.decompressPublicKey(Uint8Array.from([2, ...new Uint8Array(32).fill(0xff)])),
       () => c.ecdsa.compressPublicKey(Uint8Array.from([4, ...new Uint8Array(64).fill(1)])),
-      () => c.x25519.sharedKey(k32, zero),
+      () => c.ecdsa.verify(Uint8Array.from([2, ...new Uint8Array(32).fill(0xff)]), salt, pw),
       () => c.scrypt(pw, salt, { dkLen: 0 }),
-      () => c.scrypt(pw, salt, { dkLen: 32, logN: 0 }),
+      () => c.scrypt(pw, salt, { dkLen: 32, logN: -1 }),
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 64 }),
       () => c.scrypt(pw, salt, { dkLen: 32, r: 1.5 }),
+      () => c.scrypt(pw, salt, { dkLen: 32, r: 0 }),
       () => c.scrypt(pw, salt, { dkLen: 32, p: 0 }),
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 4, maxmem: 1 }), // in domain; the backend's memory limit
       () => c.scrypt(pw, salt, { dkLen: 32, logN: 17, r: 1 }), // RFC 7914: logN must be below 16·r
@@ -142,16 +143,17 @@ describe("faults and strict verification", () => {
       () => c.hkdfSha256(salt, salt, { dkLen: 8161 }),
       () => c.hkdfSha256(salt, salt, { dkLen: 1.5 }),
       () => c.hkdfSha512(salt, salt, { dkLen: -1 }),
-      () => c.pbkdf2Sha256(pw, salt, { iterations: 0, dkLen: 32 }),
+      () => c.pbkdf2Sha256(pw, salt, { iterations: -1, dkLen: 32 }),
       () => c.chacha20(k32, salt.subarray(0, 12), pw, { counter: -1 }),
       () => c.chacha20(k32, salt.subarray(0, 12), pw, { counter: 2 ** 32 }),
     ];
     // Every entry must throw, and what it throws must be a CryptoError.
     expect(faults.map(isCryptoError)).toEqual(faults.map(() => true));
-    // Generated: integers outside the KDF domains and non-integers.
+    // Generated: integers outside the KDF domains (0 iterations and logN 0 are
+    // inside them, as in the reference's crates) and non-integers.
     fc.assert(
       fc.property(
-        fc.oneof(fc.integer({ max: 0 }), fc.double({ noInteger: true, noNaN: true })),
+        fc.oneof(fc.integer({ max: -1 }), fc.double({ noInteger: true, noNaN: true })),
         (bad) =>
           isCryptoError(() => c.pbkdf2Sha256(pw, salt, { iterations: bad, dkLen: 32 })) &&
           isCryptoError(() => c.scrypt(pw, salt, { dkLen: 32, logN: 4, r: bad })) &&
@@ -223,9 +225,11 @@ describe("faults and strict verification", () => {
       { numRuns: 50 },
     );
   });
-  it("x25519.sharedKey rejects every low-order encoding with NonContributoryKey, the reference's message", () => {
+  it("x25519.sharedKey derives one fixed key from every low-order encoding: the reference's all-zero secret", () => {
     // The nine RFC 7748 §6.1 encodings and the other five high-bit variants of the same
-    // seven u values; anything else agrees with noble's ladder.
+    // seven u values; anything else agrees with noble's ladder. The reference's
+    // `x25519_shared_key` never checks the peer: the ladder gives the all-zero
+    // secret, and HKDF-SHA-256 of it with salt "agreement" is this key.
     const lowOrder = [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0100000000000000000000000000000000000000000000000000000000000000",
@@ -242,23 +246,15 @@ describe("faults and strict verification", () => {
       "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     ].map((h) => Uint8Array.from(Buffer.from(h, "hex")));
+    const hex = (b: Uint8Array): string => Buffer.from(b).toString("hex");
+    // The reference's value (`tests/rust-validation`, bc-crypto 0.14.0).
+    const ZERO_SECRET_KEY = "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e";
+    expect(
+      hex(c.hkdfSha256(new Uint8Array(32), new TextEncoder().encode("agreement"), { dkLen: 32 })),
+    ).toBe(ZERO_SECRET_KEY);
     fc.assert(
       fc.property(key, (priv) =>
-        lowOrder.every((pub) => {
-          try {
-            c.x25519.sharedKey(priv, pub);
-            return false;
-          } catch (e) {
-            return (
-              c.CryptoError.isCryptoError(e) &&
-              e.code === "NonContributoryKey" &&
-              e.details.code === "NonContributoryKey" &&
-              e.details.what === "X25519 public key" &&
-              e.message === "X25519 peer key produces an all-zero shared secret" &&
-              e.cause instanceof Error
-            );
-          }
-        }),
+        lowOrder.every((pub) => hex(c.x25519.sharedKey(priv, pub)) === ZERO_SECRET_KEY),
       ),
       { numRuns: 50 },
     );
@@ -513,11 +509,27 @@ describe("argument types: every byte, options and boolean argument is checked fi
   });
 });
 
-describe("verify never throws for inputs of the right length", () => {
-  // The reference returns `false` for an unparseable key or signature
-  // (`let Ok(..) = … else { return false; }`), so does the port.
-  const isBool = (f: () => unknown): boolean => typeof f() === "boolean";
-  it("ecdsa, schnorr and ed25519 return a boolean for random keys and signatures", () => {
+describe("verify returns a boolean, or InvalidData where the reference's parse panics", () => {
+  // The reference `.expect`s its public-key parses and ECDSA's compact
+  // signature parse (a panic); an input that parses then verifies or not.
+  const PARSED = [
+    "ECDSA public key",
+    "ECDSA signature",
+    "Schnorr public key",
+    "Ed25519 public key",
+  ];
+  const outcome = (f: () => unknown): boolean => {
+    try {
+      return typeof f() === "boolean";
+    } catch (e) {
+      return (
+        c.CryptoError.isCryptoError(e) &&
+        e.details.code === "InvalidData" &&
+        PARSED.includes(e.details.what)
+      );
+    }
+  };
+  it("ecdsa, schnorr and ed25519, for random keys and signatures of the right length", () => {
     const k33 = fc.uint8Array({ minLength: 33, maxLength: 33 });
     const k32 = fc.uint8Array({ minLength: 32, maxLength: 32 });
     const sig = fc.uint8Array({ minLength: 64, maxLength: 64 });
@@ -527,7 +539,7 @@ describe("verify never throws for inputs of the right length", () => {
           () => c.ecdsa.verify(ecPub, s, m),
           () => c.schnorr.verify(pub32, s, m),
           () => c.ed25519.verify(pub32, s, m),
-        ].every(isBool),
+        ].every(outcome),
       ),
       { numRuns: 200 },
     );
@@ -566,7 +578,7 @@ describe("KDF domains mirrored from the reference's crates", () => {
   it("pbkdf2: dkLen 0 is an empty key, as the reference returns", () => {
     expect(c.pbkdf2Sha256(pw, salt, { iterations: 1, dkLen: 0 })).toEqual(new Uint8Array(0));
     expect(c.pbkdf2Sha512(pw, salt, { iterations: 7, dkLen: 0 })).toEqual(new Uint8Array(0));
-    expect(() => c.pbkdf2Sha256(pw, salt, { iterations: 0, dkLen: 0 })).toThrow("iterations");
+    expect(c.pbkdf2Sha256(pw, salt, { iterations: 0, dkLen: 0 })).toEqual(new Uint8Array(0));
   });
   it("argon2id: the reference's fixed costs, no knobs", () => {
     // Argon2::default() — the cross-platform vector in crypto.test.ts pins the bytes.

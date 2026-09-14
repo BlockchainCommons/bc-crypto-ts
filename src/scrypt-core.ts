@@ -19,7 +19,7 @@ import { rotl, swap32IfBE } from "@noble/hashes/utils.js";
 
 /** Parameters for {@link scryptCore}; already validated by the caller. */
 export interface ScryptCoreParams {
-  /** CPU/memory cost, a power of two in [2, 2^32]. */
+  /** CPU/memory cost, a power of two in [1, 2^32] (N = 1: one block of `V`, mixed once). */
   readonly N: number;
   /** Block size factor ≥ 1. */
   readonly r: number;

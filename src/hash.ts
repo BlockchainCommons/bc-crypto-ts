@@ -110,8 +110,9 @@ export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array<Arr
 /** Options for the PBKDF2 functions. */
 export interface Pbkdf2Options {
   /**
-   * PBKDF2 iteration count; an integer in [1, 2^32 − 1]. The reference asserts
-   * `iterations > 0`, including for empty output, so 0 is `InvalidParameter`.
+   * PBKDF2 iteration count; an integer in [0, 2^32 − 1]. 0 derives what 1
+   * does: the reference's `pbkdf2` 0.12.2 computes the first block of each
+   * output block and then `rounds − 1` more, none for 0 or 1.
    */
   readonly iterations: number;
   /**
@@ -124,9 +125,9 @@ export interface Pbkdf2Options {
 }
 
 const pbkdf2Domain = (options: Pbkdf2Options, hLen: number): { c: number; dkLen: number } => ({
-  // Checked before the empty-output return: the reference's `assert!(iterations > 0)`
-  // comes before its allocation, so it fires for empty output too.
-  c: expectInt("pbkdf2 iterations", options.iterations, 1, U32_MAX),
+  // 0 iterations is 1 in the reference's crate (`for _ in 1..rounds` after the
+  // first block); noble requires c ≥ 1, so the same call is made for both.
+  c: Math.max(1, expectInt("pbkdf2 iterations", options.iterations, 0, U32_MAX)),
   // `dkLen: 0` is an empty key on both sides (the reference fills a zero-length Vec).
   dkLen: expectInt("pbkdf2 dkLen", options.dkLen, 0, U32_MAX * hLen),
 });
@@ -135,7 +136,7 @@ const pbkdf2Domain = (options: Pbkdf2Options, hLen: number): { c: number; dkLen:
  * PBKDF2-HMAC-SHA-256.
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s, `options` is an object, `iterations` an integer in
- * [1, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
  */
 export function pbkdf2Sha256(
   password: Uint8Array,
@@ -157,7 +158,7 @@ export function pbkdf2Sha256(
  * PBKDF2-HMAC-SHA-512.
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s, `options` is an object, `iterations` an integer in
- * [1, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
  */
 export function pbkdf2Sha512(
   password: Uint8Array,

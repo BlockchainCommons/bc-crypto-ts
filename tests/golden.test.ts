@@ -200,13 +200,13 @@ describe("golden: edge cases", () => {
       outcome(() => c.ed25519.verify(identity, nonCanonicalRSignature, msg)),
     ]).toMatchSnapshot();
   });
-  it("x25519.sharedKey with a low-order public key (the reference's NonContributoryKey)", () => {
+  it("x25519.sharedKey with a low-order public key (the reference's all-zero secret: one key)", () => {
     expect([
       outcome(() => c.x25519.sharedKey(PRIV, new Uint8Array(32))),
       outcome(() => c.x25519.sharedKey(PRIV, one(32))),
     ]).toMatchSnapshot();
   });
-  it("verify on malformed keys and signatures of the right length (false on both sides)", () => {
+  it("verify on malformed keys and signatures of the right length (false, or InvalidData where the reference's parse panics)", () => {
     const ecdsaPub = c.ecdsa.publicKey(PRIV);
     expect([
       outcome(() => c.ecdsa.verify(ecdsaPub, fill(64, 0xff), msg)),
@@ -243,15 +243,15 @@ describe("golden: edge cases", () => {
               () => c.ecdsa.compressPublicKey(Uint8Array.from([4, ...fill(64, 1)])),
             ],
             ["scrypt dkLen 0", () => c.scrypt(pw, SALT, { dkLen: 0 })],
-            ["scrypt logN 0", () => c.scrypt(pw, SALT, { dkLen: 32, logN: 0 })],
+            ["scrypt logN -1", () => c.scrypt(pw, SALT, { dkLen: 32, logN: -1 })],
             ["scrypt r 1.5", () => c.scrypt(pw, SALT, { dkLen: 32, r: 1.5 })],
             ["argon2id dkLen 3", () => c.argon2id(pw, SALT, { dkLen: 3 })],
             ["argon2id salt 4", () => c.argon2id(pw, bytes(4), { dkLen: 32 })],
             ["hkdfSha256 length 8161", () => c.hkdfSha256(KEY, SALT, { dkLen: 8161 })],
             ["hkdfSha256 length 1.5", () => c.hkdfSha256(KEY, SALT, { dkLen: 1.5 })],
             [
-              "pbkdf2Sha256 iterations 0",
-              () => c.pbkdf2Sha256(pw, SALT, { iterations: 0, dkLen: 32 }),
+              "pbkdf2Sha256 iterations -1",
+              () => c.pbkdf2Sha256(pw, SALT, { iterations: -1, dkLen: 32 }),
             ],
             ["pbkdf2Sha256 dkLen 0", () => c.pbkdf2Sha256(pw, SALT, { iterations: 1, dkLen: 0 })],
             ["chacha20 counter -1", () => c.chacha20(KEY, NONCE, bytes(8), { counter: -1 })],
@@ -259,6 +259,18 @@ describe("golden: edge cases", () => {
         ).map(([k, f]) => [k, outcome(f)]),
       ),
     ).toMatchSnapshot();
+  });
+  it("zero KDF costs derive, as the reference's crates do (scrypt N = 1; PBKDF2 0 rounds as 1)", () => {
+    const pw = text("pw");
+    expect({
+      "scrypt logN 0": outcome(() => c.scrypt(pw, SALT, { dkLen: 32, logN: 0 })),
+      "pbkdf2Sha256 iterations 0": outcome(() =>
+        c.pbkdf2Sha256(pw, SALT, { iterations: 0, dkLen: 32 }),
+      ),
+      "pbkdf2Sha256 iterations 1": outcome(() =>
+        c.pbkdf2Sha256(pw, SALT, { iterations: 1, dkLen: 32 }),
+      ),
+    }).toMatchSnapshot();
   });
   it("scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
     expect([

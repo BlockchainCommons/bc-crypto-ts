@@ -5,6 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+# The reference: the published crate, whose sources are commit 4f2b791 (tag 0.14.0).
 bc-crypto = "=0.14.0"
 bc-rand = "=0.5.0"
 serde = { version = "1", features = ["derive"] }
@@ -12,11 +13,3 @@ serde_json = "1"
 hex = "0.4"
 rand_core = "0.6"
 rand = "0.9"
-
-# The reference is the bc-rust/bc-crypto-rust working tree (commit 4f2b791, tag
-# 0.14.0, plus its input-validation edits; CI reproduces it from
-# reference/bc-crypto-rust-4f2b791-edits.patch). Its Cargo.toml still says
-# 0.14.0, so this patch replaces the registry crate of the same version. Drop
-# it, and re-pin above, when the release that contains the edits ships.
-[patch.crates-io]
-bc-crypto = { path = "../../../../../bc-rust/bc-crypto-rust" }

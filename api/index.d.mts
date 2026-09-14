@@ -1,7 +1,7 @@
 import { RandomNumberGenerator, RngOptions, RngOptions as RngOptions$1 } from "@blockchaincommons/rand";
 //#region src/error.d.ts
 /** Machine-readable discriminant for a {@link CryptoError}. */
-type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "NonContributoryKey" | "AuthenticationFailed";
+type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
 /**
  * The structured payload of a {@link CryptoError}, discriminated by `code`:
  * `e.details.code === "InvalidSize"` narrows to `{ what, expected, actual }`.
@@ -31,14 +31,6 @@ type CryptoErrorDetails = {
   /** The argument, e.g. `"scrypt logN"` or `"ECDSA message"`. */
   readonly what: string;
 } | {
-  /**
-   * `x25519.sharedKey` was given a low-order peer key, so the shared
-   * secret would be all zero (the reference's `Error::NonContributoryKey`).
-   */
-  readonly code: "NonContributoryKey";
-  /** The argument: `"X25519 public key"`. */
-  readonly what: string;
-} | {
   /** AEAD authentication failed: wrong key, nonce or aad, or tampered data. */
   readonly code: "AuthenticationFailed";
 };
@@ -46,8 +38,8 @@ type CryptoErrorDetails = {
  * Thrown for wrong-length keys, nonces, signatures and public keys
  * (`InvalidSize`), a key, point or signature of the right length that is not
  * valid (`InvalidData`), an argument outside its domain, including a value
- * of the wrong type (`InvalidParameter`), a low-order X25519 peer key
- * (`NonContributoryKey`), and AEAD tag mismatch (`AuthenticationFailed`).
+ * of the wrong type (`InvalidParameter`), and AEAD tag mismatch
+ * (`AuthenticationFailed`).
  *
  * Every failure of an argument or of a primitive is a `CryptoError`; when a
  * backend error is what was caught, it is the `cause`. Two things propagate
@@ -86,12 +78,6 @@ export declare class CryptoError extends Error {
   static invalidData(what: string, message: string, cause?: unknown): CryptoError;
   /** `what` (a number, an options object or a byte argument) is outside its domain. */
   static invalidParameter(what: string, message: string, cause?: unknown): CryptoError;
-  /**
-   * The X25519 peer key is a low-order point, so the shared secret would be
-   * all zero. The message is the reference's `Error::NonContributoryKey`
-   * Display text.
-   */
-  static nonContributoryKey(cause?: unknown): CryptoError;
   /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */
   static authenticationFailed(cause?: unknown): CryptoError;
 }
@@ -161,8 +147,9 @@ export declare function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8A
 /** Options for the PBKDF2 functions. */
 interface Pbkdf2Options {
   /**
-   * PBKDF2 iteration count; an integer in [1, 2^32 − 1]. The reference asserts
-   * `iterations > 0`, including for empty output, so 0 is `InvalidParameter`.
+   * PBKDF2 iteration count; an integer in [0, 2^32 − 1]. 0 derives what 1
+   * does: the reference's `pbkdf2` 0.12.2 computes the first block of each
+   * output block and then `rounds − 1` more, none for 0 or 1.
    */
   readonly iterations: number;
   /**
@@ -177,14 +164,14 @@ interface Pbkdf2Options {
  * PBKDF2-HMAC-SHA-256.
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s, `options` is an object, `iterations` an integer in
- * [1, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
  */
 export declare function pbkdf2Sha256(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 /**
  * PBKDF2-HMAC-SHA-512.
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s, `options` is an object, `iterations` an integer in
- * [1, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
  */
 export declare function pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 /** Options for the HKDF functions. */
@@ -216,8 +203,8 @@ interface ScryptOptions {
   readonly dkLen: number;
   /**
    * log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in
-   * [1, 32] and below `16·r`; the reference asserts `log_n > 0`, and its
-   * panic is `InvalidParameter` here. Values above 32 need at least 3.3 TiB.
+   * [0, 32] and below `16·r` (`scrypt::Params::new`); 0 is N = 1, which the
+   * reference derives with. Values above 32 need at least 3.3 TiB.
    */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
@@ -236,7 +223,7 @@ interface ScryptOptions {
 /**
  * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
  * `Uint8Array`s and `options` an object; when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [0, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -319,12 +306,12 @@ interface X25519 {
   publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
    * X25519 Diffie-Hellman, then HKDF-SHA-256 with salt "agreement" → 32 bytes
-   * (the reference's `try_x25519_shared_key`).
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`;
-   * `InvalidSize` on a wrong length; `NonContributoryKey` when `publicKey`
-   * is a low-order point, i.e. the shared secret would be all zero, as the
-   * reference's `try_x25519_shared_key` returns `Err(Error::NonContributoryKey)`
-   * (its `x25519_shared_key` wrapper panics on the same input).
+   * (the reference's `x25519_shared_key`). A low-order `publicKey` (RFC 7748
+   * §6.1) gives the all-zero shared secret and so one fixed key, whatever the
+   * private key: the reference calls x25519-dalek's `diffie_hellman` without
+   * checking `was_contributory`, and neither does this. Reject such peers
+   * yourself before deriving from an untrusted key.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length.
    */
   sharedKey(privateKey: Uint8Array, publicKey: Uint8Array): Uint8Array<ArrayBuffer>;
 }
@@ -370,9 +357,9 @@ interface Ecdsa {
    */
   sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
-   * `false` on an invalid signature, and for an unparseable key or an r or s
-   * ≥ n of the right length (the reference's `let Ok(..) = … else { return false; }`).
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature.
+   * `false` on a signature that does not verify, r or s = 0 and a high s
+   * included (libsecp256k1's `secp256k1_ecdsa_verify`).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not a point on the curve or r or s ≥ n, the reference's `.expect`ed parses (`PublicKey::from_slice`, `Signature::from_compact`).
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -404,9 +391,8 @@ interface Schnorr {
    */
   sign(privateKey: Uint8Array, message: Uint8Array, options?: SchnorrSignOptions): Uint8Array<ArrayBuffer>;
   /**
-   * `false` on an invalid signature or an unparseable key (BIP-340 vectors
-   * 5–14; the reference's `let Ok(pk) = … else { return false; }`).
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature.
+   * `false` on a signature that does not verify (BIP-340 vectors 6–13).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not the x of a point on the curve (BIP-340 vectors 5 and 14), the reference's `.expect`ed `XOnlyPublicKey::from_byte_array`.
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -445,11 +431,12 @@ interface Ed25519 {
   /**
    * `(publicKey, signature, message)`, the same order as `ecdsa.verify` and `schnorr.verify`.
    *
-   * Uses the reference's uncofactored verification equation (`verify_strict`).
-   * Only canonical point encodings are accepted, and a small-order public
-   * key or `R` never verifies. `false` on any invalid or malformed input of
-   * the right length, including a key the reference cannot decode.
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature.
+   * Uses the reference's uncofactored verification equation (`verify_strict`):
+   * `false` for a small-order key or `R`, a non-canonical `R`, an `s` ≥ L,
+   * or a signature that does not verify. The key is decoded as the
+   * reference's `VerifyingKey::from_bytes` decodes it (a non-canonical y is
+   * reduced), and its `.unwrap()` on a key with no point is a panic.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not a point on the curve.
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }

@@ -55,4 +55,10 @@ export const backendRejected =
       cause,
     );
 
+/** The wrap for a point decoder: bytes of the right length that are not a point on the curve. */
+export const invalidPoint =
+  (what: string) =>
+  (cause: unknown): CryptoError =>
+    CryptoError.invalidData(what, `${what} is not a point on the curve`, cause);
+
 export const U32_MAX = 0xffffffff;

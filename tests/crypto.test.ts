@@ -445,7 +445,8 @@ describe("Schnorr", () => {
     expect(isValid).toBe(true);
   });
 
-  // BIP-340 Test Vector 5 - public key not on the curve
+  // BIP-340 Test Vector 5 - public key not on the curve. The reference
+  // `.expect`s `XOnlyPublicKey::from_byte_array` (a panic): InvalidData.
   test("test_bip340_vector_5", () => {
     const publicKey = hexToBytes(
       "EEFDEA4CDB677750A420FEE807EACF21EB9898AE79B9768766E4FAA04A2D4A34",
@@ -455,7 +456,9 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E17776969E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    expect(schnorr.verify(publicKey, signature, message)).toBe(false);
+    expect(() => schnorr.verify(publicKey, signature, message)).toThrow(
+      "Schnorr public key is not a point on the curve",
+    );
   });
 
   // BIP-340 Test Vector 6 - has_even_y(R) is false
@@ -570,7 +573,8 @@ describe("Schnorr", () => {
     expect(isValid).toBe(false);
   });
 
-  // BIP-340 Test Vector 14 - public key is not a valid X coordinate
+  // BIP-340 Test Vector 14 - public key is not a valid X coordinate (x ≥ p).
+  // The reference `.expect`s `XOnlyPublicKey::from_byte_array` (a panic): InvalidData.
   test("test_bip340_vector_14", () => {
     const publicKey = hexToBytes(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
@@ -580,7 +584,9 @@ describe("Schnorr", () => {
       "6CFF5C3BA86C69EA4B7376F31A9BCB4F74C1976089B2D9963DA2E5543E17776969E89B4C5564D00349106B8497785DD7D1D713A8AE82B32FA79D5F7FC407D39B",
     );
 
-    expect(schnorr.verify(publicKey, signature, message)).toBe(false);
+    expect(() => schnorr.verify(publicKey, signature, message)).toThrow(
+      "Schnorr public key is not a point on the curve",
+    );
   });
 
   // BIP-340 Test Vector 15 - empty message
@@ -939,45 +945,64 @@ describe("CryptoError", () => {
       expect((e as CryptoError).code).toBe("AuthenticationFailed");
     }
   });
-  test("verify returns false and never throws for malformed keys and signatures of the right length", () => {
-    // The reference's `let Ok(..) = … else { return false; }` on every parse failure.
+  test("verify: a parsed input is a boolean; a key the reference's parser rejects is InvalidData", () => {
+    // The reference `.expect`s its public-key parses and ECDSA's compact
+    // signature parse, so those inputs are panics; everything else is a `bool`.
     const priv = new Uint8Array(32).fill(7);
     const msg = new Uint8Array(0);
     const bad = new Uint8Array(64).fill(0xff);
     const ff32 = new Uint8Array(32).fill(0xff);
     const hex = (h: string): Uint8Array => Uint8Array.from(Buffer.from(h, "hex"));
-    // signatures
-    expect(ecdsa.verify(ecdsa.publicKey(priv), bad, msg)).toBe(false);
+    const invalidData = (f: () => unknown, what: string): void => {
+      let err: unknown;
+      try {
+        f();
+      } catch (e) {
+        err = e;
+      }
+      expect(
+        CryptoError.isCryptoError(err) && err.details.code === "InvalidData" && err.details.what,
+      ).toBe(what);
+    };
+    // Any 64 bytes are a Schnorr or Ed25519 signature, which then fails; ECDSA's
+    // compact parse overflows for r or s ≥ n.
     expect(schnorr.verify(schnorr.publicKey(priv), bad, msg)).toBe(false);
     expect(ed25519.verify(ed25519.publicKey(priv), bad, msg)).toBe(false);
+    invalidData(() => ecdsa.verify(ecdsa.publicKey(priv), bad, msg), "ECDSA signature");
     // keys the parsers reject: x ≥ p (ECDSA, Schnorr) and an undecodable Ed25519 y
     const ecSig = ecdsa.sign(priv, msg);
-    expect(ecdsa.verify(Uint8Array.from([2, ...ff32]), ecSig, msg)).toBe(false);
-    expect(
-      ecdsa.verify(
-        hex("02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"),
-        ecSig,
-        msg,
-      ),
-    ).toBe(false);
-    expect(
-      schnorr.verify(ff32, schnorr.sign(priv, msg, { auxRand: new Uint8Array(32) }), msg),
-    ).toBe(false);
+    invalidData(() => ecdsa.verify(Uint8Array.from([2, ...ff32]), ecSig, msg), "ECDSA public key");
+    invalidData(
+      () =>
+        ecdsa.verify(
+          hex("02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"),
+          ecSig,
+          msg,
+        ),
+      "ECDSA public key",
+    );
+    invalidData(
+      () => schnorr.verify(ff32, schnorr.sign(priv, msg, { auxRand: new Uint8Array(32) }), msg),
+      "Schnorr public key",
+    );
     // y = p + 2 with the sign bit clear: no square root, so dalek and noble both fail to decode.
-    expect(
-      ed25519.verify(
-        hex("efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-        ed25519.sign(priv, msg),
-        msg,
-      ),
-    ).toBe(false);
-    // r or s in {0, n}
+    invalidData(
+      () =>
+        ed25519.verify(
+          hex("efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
+          ed25519.sign(priv, msg),
+          msg,
+        ),
+      "Ed25519 public key",
+    );
+    // r or s = 0 parses and fails to verify; r or s = n overflows the parse
     const n = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141";
     const one = "00".repeat(31) + "01";
     const zero = "00".repeat(32);
-    for (const sig of [zero + one, n + one, one + n, one + zero]) {
-      expect(ecdsa.verify(ecdsa.publicKey(priv), hex(sig), msg)).toBe(false);
-    }
+    expect(ecdsa.verify(ecdsa.publicKey(priv), hex(zero + one), msg)).toBe(false);
+    expect(ecdsa.verify(ecdsa.publicKey(priv), hex(one + zero), msg)).toBe(false);
+    invalidData(() => ecdsa.verify(ecdsa.publicKey(priv), hex(n + one), msg), "ECDSA signature");
+    invalidData(() => ecdsa.verify(ecdsa.publicKey(priv), hex(one + n), msg), "ECDSA signature");
   });
 });
 

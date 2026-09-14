@@ -7,11 +7,7 @@ import { isBytes } from "@noble/hashes/utils.js";
 
 /** Machine-readable discriminant for a {@link CryptoError}. */
 export type CryptoErrorCode =
-  | "InvalidSize"
-  | "InvalidData"
-  | "InvalidParameter"
-  | "NonContributoryKey"
-  | "AuthenticationFailed";
+  "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
 
 /**
  * The structured payload of a {@link CryptoError}, discriminated by `code`:
@@ -46,15 +42,6 @@ export type CryptoErrorDetails =
       readonly what: string;
     }
   | {
-      /**
-       * `x25519.sharedKey` was given a low-order peer key, so the shared
-       * secret would be all zero (the reference's `Error::NonContributoryKey`).
-       */
-      readonly code: "NonContributoryKey";
-      /** The argument: `"X25519 public key"`. */
-      readonly what: string;
-    }
-  | {
       /** AEAD authentication failed: wrong key, nonce or aad, or tampered data. */
       readonly code: "AuthenticationFailed";
     };
@@ -63,8 +50,8 @@ export type CryptoErrorDetails =
  * Thrown for wrong-length keys, nonces, signatures and public keys
  * (`InvalidSize`), a key, point or signature of the right length that is not
  * valid (`InvalidData`), an argument outside its domain, including a value
- * of the wrong type (`InvalidParameter`), a low-order X25519 peer key
- * (`NonContributoryKey`), and AEAD tag mismatch (`AuthenticationFailed`).
+ * of the wrong type (`InvalidParameter`), and AEAD tag mismatch
+ * (`AuthenticationFailed`).
  *
  * Every failure of an argument or of a primitive is a `CryptoError`; when a
  * backend error is what was caught, it is the `cause`. Two things propagate
@@ -127,19 +114,6 @@ export class CryptoError extends Error {
   /** `what` (a number, an options object or a byte argument) is outside its domain. */
   static invalidParameter(what: string, message: string, cause?: unknown): CryptoError {
     return new CryptoError(message, { code: "InvalidParameter", what }, cause);
-  }
-
-  /**
-   * The X25519 peer key is a low-order point, so the shared secret would be
-   * all zero. The message is the reference's `Error::NonContributoryKey`
-   * Display text.
-   */
-  static nonContributoryKey(cause?: unknown): CryptoError {
-    return new CryptoError(
-      "X25519 peer key produces an all-zero shared secret",
-      { code: "NonContributoryKey", what: "X25519 public key" },
-      cause,
-    );
   }
 
   /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */

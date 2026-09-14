@@ -4,6 +4,7 @@
  * @module ecdsa
  */
 import { secp256k1, schnorr as nobleSchnorr } from "@noble/curves/secp256k1.js";
+import { bytesToNumberBE } from "@noble/curves/utils.js";
 import {
   type RandomNumberGenerator,
   type RngOptions,
@@ -12,7 +13,7 @@ import {
 } from "@blockchaincommons/rand";
 import { doubleSha256 } from "./hash.js";
 import { CryptoError, requireBytes, requireLength, requireOptions } from "./error.js";
-import { guard } from "./domain.js";
+import { guard, invalidPoint } from "./domain.js";
 
 const ECDSA_PRIVATE_KEY_SIZE = 32;
 const ECDSA_PUBLIC_KEY_SIZE = 33;
@@ -25,10 +26,21 @@ const invalidScalar =
   (what: string) =>
   (cause: unknown): CryptoError =>
     CryptoError.invalidData(what, `${what} is not a valid scalar (must be in [1, n - 1])`, cause);
-const invalidPoint =
-  (what: string) =>
-  (cause: unknown): CryptoError =>
-    CryptoError.invalidData(what, `${what} is not a point on the curve`, cause);
+
+const CURVE_ORDER = secp256k1.Point.Fn.ORDER;
+
+/**
+ * The reference's `Signature::from_compact` is `.expect`ed, and libsecp256k1's
+ * `secp256k1_ecdsa_signature_parse_compact` fails only when r or s overflows
+ * n: that is `InvalidData` here. r or s = 0 parses, and then does not verify.
+ */
+function requireCompactScalars(what: string, signature: Uint8Array): void {
+  const r = bytesToNumberBE(signature.subarray(0, 32));
+  const s = bytesToNumberBE(signature.subarray(32));
+  if (r >= CURVE_ORDER || s >= CURVE_ORDER) {
+    throw CryptoError.invalidData(what, `${what} has r or s outside [0, n - 1]`);
+  }
+}
 
 /** The shape of the {@link ecdsa} family. */
 export interface Ecdsa {
@@ -68,9 +80,9 @@ export interface Ecdsa {
    */
   sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
-   * `false` on an invalid signature, and for an unparseable key or an r or s
-   * ≥ n of the right length (the reference's `let Ok(..) = … else { return false; }`).
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature.
+   * `false` on a signature that does not verify, r or s = 0 and a high s
+   * included (libsecp256k1's `secp256k1_ecdsa_verify`).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not a point on the curve or r or s ≥ n, the reference's `.expect`ed parses (`PublicKey::from_slice`, `Signature::from_compact`).
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -146,6 +158,10 @@ export const ecdsa: Ecdsa = {
     requireLength("ECDSA public key", publicKey, ECDSA_PUBLIC_KEY_SIZE);
     requireLength("ECDSA signature", signature, ECDSA_SIGNATURE_SIZE);
     requireBytes("ECDSA message", message);
+    // The reference parses with `.expect`, the key first: an undecodable key
+    // or an r or s ≥ n is a panic. A parsed pair that does not verify is `false`.
+    guard(() => secp256k1.Point.fromBytes(publicKey), invalidPoint("ECDSA public key"));
+    requireCompactScalars("ECDSA signature", signature);
     try {
       return secp256k1.verify(signature, doubleSha256(message), publicKey, {
         prehash: false,
@@ -188,9 +204,8 @@ export interface Schnorr {
     options?: SchnorrSignOptions,
   ): Uint8Array<ArrayBuffer>;
   /**
-   * `false` on an invalid signature or an unparseable key (BIP-340 vectors
-   * 5–14; the reference's `let Ok(pk) = … else { return false; }`).
-   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature.
+   * `false` on a signature that does not verify (BIP-340 vectors 6–13).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not the x of a point on the curve (BIP-340 vectors 5 and 14), the reference's `.expect`ed `XOnlyPublicKey::from_byte_array`.
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -224,6 +239,13 @@ export const schnorr: Schnorr = {
     requireLength("Schnorr public key", publicKey, SCHNORR_PUBLIC_KEY_SIZE);
     requireLength("Schnorr signature", signature, SCHNORR_SIGNATURE_SIZE);
     requireBytes("Schnorr message", message);
+    // The reference `.expect`s the key (`secp256k1_xonly_pubkey_parse`: x < p
+    // and on the curve, which is what `02 ‖ x` decodes under); any 64 bytes
+    // are a signature, which then verifies or not.
+    guard(
+      () => secp256k1.Point.fromBytes(Uint8Array.of(0x02, ...publicKey)),
+      invalidPoint("Schnorr public key"),
+    );
     try {
       return nobleSchnorr.verify(signature, message, publicKey);
     } catch {

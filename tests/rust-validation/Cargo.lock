@@ -45,6 +45,8 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 [[package]]
 name = "bc-crypto"
 version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e74e8d1d886ad04ed17badc8856d7303168cabe9201bba100a621171aa41bd7"
 dependencies = [
  "argon2",
  "bc-rand",

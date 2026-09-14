@@ -8203,7 +8203,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8263,7 +8263,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8398,7 +8398,7 @@
      "hex": "0708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8458,7 +8458,7 @@
      "hex": "0708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8653,7 +8653,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8848,7 +8848,7 @@
      "hex": "0708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -8983,7 +8983,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9178,7 +9178,7 @@
      "hex": "0708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9328,7 +9328,7 @@
      "hex": "243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c89"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9463,7 +9463,7 @@
      "hex": "243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c89"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9628,7 +9628,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9643,7 +9643,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9658,7 +9658,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9733,7 +9733,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9748,7 +9748,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9778,7 +9778,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9793,7 +9793,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9808,7 +9808,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9823,7 +9823,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9838,7 +9838,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9853,7 +9853,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9868,7 +9868,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9883,7 +9883,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9898,7 +9898,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9913,7 +9913,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9928,7 +9928,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9943,7 +9943,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9958,7 +9958,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9973,7 +9973,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -9988,7 +9988,7 @@
      "hex": "07"
     }
    },
-   "expect": "0"
+   "expect": "throw:CryptoError"
   },
   {
    "recipe": {
@@ -10991,7 +10991,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11004,7 +11004,7 @@
      "hex": "0100000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11017,7 +11017,7 @@
      "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11030,7 +11030,7 @@
      "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11043,7 +11043,7 @@
      "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11056,7 +11056,7 @@
      "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11069,7 +11069,7 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11082,7 +11082,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000080"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11095,7 +11095,7 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11108,7 +11108,7 @@
      "hex": "0100000000000000000000000000000000000000000000000000000000000080"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11121,7 +11121,7 @@
      "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11134,7 +11134,7 @@
      "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11147,7 +11147,7 @@
      "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11160,7 +11160,7 @@
      "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11173,7 +11173,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11186,7 +11186,7 @@
      "hex": "0100000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11199,7 +11199,7 @@
      "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11212,7 +11212,7 @@
      "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11225,7 +11225,7 @@
      "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11238,7 +11238,7 @@
      "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11251,7 +11251,7 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11264,7 +11264,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000080"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11277,7 +11277,7 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11290,7 +11290,7 @@
      "hex": "0100000000000000000000000000000000000000000000000000000000000080"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11303,7 +11303,7 @@
      "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11316,7 +11316,7 @@
      "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11329,7 +11329,7 @@
      "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11342,7 +11342,7 @@
      "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
-   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+   "expect": "6ddeb1af8383e3855336d43a5993990101fb76eb68e0ec3141fe03d3dc2f8d6e"
   },
   {
    "recipe": {
@@ -11528,7 +11528,7 @@
     "r": 8,
     "p": 1
    },
-   "expect": "throw:CryptoError"
+   "expect": "5a81ca47d8c099b1c6e0d5c191ea5d81d1775626fe9ca10acf2fae5f3c28975e"
   },
   {
    "recipe": {
@@ -11794,7 +11794,7 @@
     "iter": 0,
     "len": 0
    },
-   "expect": "throw:CryptoError"
+   "expect": ""
   },
   {
    "recipe": {
@@ -11809,7 +11809,7 @@
     "iter": 0,
     "len": 32
    },
-   "expect": "throw:CryptoError"
+   "expect": "09d8b84188254ca4b82c68202c11d368569d655b6aa0c1909344534394a05a33"
   },
   {
    "recipe": {
@@ -11824,7 +11824,7 @@
     "iter": 0,
     "len": 0
    },
-   "expect": "throw:CryptoError"
+   "expect": ""
   },
   {
    "recipe": {
@@ -11839,7 +11839,7 @@
     "iter": 0,
     "len": 32
    },
-   "expect": "throw:CryptoError"
+   "expect": "4683e283eefbf2e5eea9aa7d7376e6362109c9af0a629fe12352968d77d39172"
   },
   {
    "recipe": {

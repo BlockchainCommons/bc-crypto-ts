@@ -11,10 +11,8 @@
 //! of the Rust width): never a match, never a mismatch. The reference call runs
 //! under `catch_unwind`, so a panic is a throw. Outcomes are compared after
 //! normalising every failure (TS `throw:<Name>`, Rust panic or `Err`) to
-//! "throw", except `x25519Shared`, whose `Err(NonContributoryKey)` is rendered
-//! `throw:NonContributoryKey|<Display>` and compared verbatim with the TS
-//! adapter's `throw:<code>|<message>`. There is no exception list: any other
-//! difference is a MISMATCH, and the process exits 1.
+//! "throw". There is no exception list: any other difference is a MISMATCH,
+//! and the process exits 1.
 use bc_crypto::hash::{crc32, crc32_data_opt, hkdf_hmac_sha512, pbkdf2_hmac_sha512};
 use bc_crypto::*;
 use bc_rand::SeededRandomNumberGenerator;
@@ -138,13 +136,9 @@ fn run(r: &Value) -> std::result::Result<Outcome, JsOnly> {
             })
         }
         "x25519Pub" => { let priv_ = fixed::<32>(b("priv"))?; attempt(move || Some(hex::encode(x25519_public_key_from_private_key(&priv_)))) }
-        // The reference's one error value on this path, rendered `throw:<code>|<Display>` and compared verbatim.
         "x25519Shared" => {
             let (priv_, pub_) = (fixed::<32>(b("priv"))?, fixed::<32>(b("pub"))?);
-            attempt(move || Some(match try_x25519_shared_key(&priv_, &pub_) {
-                Ok(key) => hex::encode(key),
-                Err(e) => format!("throw:NonContributoryKey|{e}"),
-            }))
+            attempt(move || Some(hex::encode(x25519_shared_key(&priv_, &pub_))))
         }
         "deriveAgreement" => { let km = b("km"); attempt(move || Some(hex::encode(derive_agreement_private_key(km)))) }
         "deriveSigning" => { let km = b("km"); attempt(move || Some(hex::encode(derive_signing_private_key(km)))) }
@@ -192,15 +186,11 @@ fn run(r: &Value) -> std::result::Result<Outcome, JsOnly> {
     })
 }
 
-/// The resolved `bc-crypto` source, from this harness's Cargo.lock: the
-/// registry version, or the `[patch.crates-io]` path with its git HEAD and a
-/// dirty flag (the reference is a working tree until the release that
-/// contains its edits ships).
+/// The resolved `bc-crypto` version and source, from this harness's Cargo.lock.
 fn provenance() -> String {
     let dir = env!("CARGO_MANIFEST_DIR");
     let lock = std::fs::read_to_string(format!("{dir}/Cargo.lock")).unwrap_or_default();
-    let mut version = String::from("?");
-    let mut source: Option<String> = None;
+    let (mut version, mut source) = (String::from("?"), String::from("?"));
     let mut in_pkg = false;
     for line in lock.lines() {
         let line = line.trim();
@@ -208,27 +198,11 @@ fn provenance() -> String {
         if line == "name = \"bc-crypto\"" { in_pkg = true; continue; }
         if in_pkg {
             if let Some(v) = line.strip_prefix("version = ") { version = v.trim_matches('"').to_string(); }
-            if let Some(s) = line.strip_prefix("source = ") { source = Some(s.trim_matches('"').to_string()); }
+            if let Some(s) = line.strip_prefix("source = ") { source = s.trim_matches('"').to_string(); }
             if line.starts_with("dependencies") || line.starts_with("checksum") { in_pkg = false; }
         }
     }
-    if let Some(s) = source { return format!("bc-crypto {version} ({s})"); }
-    let manifest = std::fs::read_to_string(format!("{dir}/Cargo.toml")).unwrap_or_default();
-    let path = manifest
-        .lines()
-        .find(|l| l.trim_start().starts_with("bc-crypto = { path = "))
-        .and_then(|l| l.split('"').nth(1))
-        .map(|p| format!("{dir}/{p}"))
-        .unwrap_or_else(|| "?".into());
-    let git = |args: &[&str]| {
-        std::process::Command::new("git").arg("-C").arg(&path).args(args).output().ok()
-            .filter(|o| o.status.success())
-            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-    };
-    let head = git(&["rev-parse", "--short", "HEAD"]).unwrap_or_else(|| "?".into());
-    let dirty = git(&["status", "--porcelain", "--untracked-files=all"]).map(|s| !s.is_empty()).unwrap_or(false);
-    let canonical = std::fs::canonicalize(&path).map(|p| p.display().to_string()).unwrap_or(path);
-    format!("bc-crypto {version} patched from {canonical} (HEAD {head}{})", if dirty { ", dirty" } else { "" })
+    format!("bc-crypto {version} ({source})")
 }
 
 fn main() {
