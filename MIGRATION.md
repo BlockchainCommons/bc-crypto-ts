@@ -161,17 +161,3 @@ that lacks a method the draw calls, propagates unwrapped:
 + const key = ecdsa.generatePrivateKey({ rng });
 + const sig = schnorr.sign(key, msg, { rng });
 ```
-
-## 6. Node and TypeScript floors
-
-Node **22.12** and TypeScript **5.7** (for `Uint8Array<ArrayBuffer>` return
-types). The IIFE / global-script build is gone; use the ESM or CJS entry.
-
-## 7. What did not change
-
-- The HKDF salts (`"agreement"`, `"signing"`),
-  the scrypt defaults (log₂N 17, r 8, p 1) and the Argon2id defaults
-  (t 2, m 19456 KiB, p 1).
-- ECDSA signs `doubleSha256(message)` deterministically (RFC 6979) and
-  returns the 64-byte compact form.
-- Schnorr is BIP-340 with 32 bytes of aux-rand.

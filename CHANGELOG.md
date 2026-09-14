@@ -69,22 +69,9 @@ now patches in; against it there is no exception list. Requires
   the paged core against noble under one-block, three-block and default
   pages plus the RFC 7914 vectors.
 
-### Corrections to the 1.0.0-beta.2 entry
+## 1.0.0-beta.2 - 2026-09-12
 
-The four "behavioral differences" that entry kept were differences from the
-released `bc-crypto` 0.14.0 crate, not from the reference tree, which already
-returned `false` for an unparseable verify input, rejected a low-order X25519
-peer and asserted positive KDF costs. Against the reference, malformed verify
-inputs match (`false` on both sides), scrypt logN 0 and PBKDF2 iterations 0
-are the usual panic → `InvalidParameter` mapping, and the low-order X25519
-peer is matched by code and message as of this release.
-
-## 1.0.0-beta.2
-
-Fixes Ed25519 verification and adds reference parameter validation. Four
-behavioral differences remained against the published Rust `bc-crypto`
-0.14.0 crate (see the corrections above). Ordinary signing and derivation
-outputs are unchanged.
+Fixes Ed25519 verification and adds reference parameter validation.
 
 ### Fixed
 
@@ -139,20 +126,6 @@ outputs are unchanged.
   reports 649 matches and 30 expected-divergence/JS-only cases, with no
   unexpected mismatches.
 
-### Internal
-
-- `RUST_DIVERGENCES.md` now records exactly four divergences, each kept
-  on purpose: low-order X25519 peer keys (rejected here, a predictable key
-  there), `verify` on malformed encodings (`false` here, a panic there -
-  BIP-340 and RFC 8032 specify `false`), scrypt `logN: 0`, and PBKDF2
-  `iterations: 0` (the reference's crate treats it as one).
-- The Rust harness allows only exact reviewed divergence recipes and checks
-  the expected HKDF-of-zero output for low-order X25519 peers. Its `--strict`
-  mode disables behavioral exceptions for candidate reference versions.
-- Expanded the golden corpus to 679 vectors, including Ed25519 torsion,
-  PBKDF2 zero-cost/empty-output, X25519 encodings, scrypt parameter rules,
-  empty HKDF salt, and non-canonical Ed25519 scalar cases.
-
-## 1.0.0-beta.1
+## 1.0.0-beta.1 - 2026-09-12
 
 Initial beta implementation.
