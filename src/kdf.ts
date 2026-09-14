@@ -5,8 +5,15 @@
  */
 import { scrypt as nobleScrypt } from "@noble/hashes/scrypt.js";
 import { argon2id as nobleArgon2id } from "@noble/hashes/argon2.js";
-import { CryptoError } from "./error.js";
+import { CryptoError, requireBytes, requireOptions } from "./error.js";
 import { backendRejected, expectInt, expectMinLength, guard, U32_MAX } from "./domain.js";
+import { scryptCore } from "./scrypt-core.js";
+
+/**
+ * A working buffer larger than this goes to the paged core: every engine
+ * can hold 2^31 bytes in one typed array, JavaScriptCore no more than 2^32.
+ */
+const SINGLE_BUFFER_LIMIT = 2 ** 31;
 
 /** Options for {@link scrypt}. Defaults are the reference parameters. */
 export interface ScryptOptions {
@@ -16,17 +23,22 @@ export interface ScryptOptions {
    * with the defaults any length ≥ 1 is accepted (the reference's default path).
    */
   readonly dkLen: number;
-  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 32] and below `16·r`. */
+  /**
+   * log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in
+   * [0, 32] and below `16·r` (`scrypt::Params::new`); 0 is N = 1, which the
+   * reference derives with. Values above 32 need at least 3.3 TiB.
+   */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
   readonly r?: number | undefined;
   /** Parallelism. Default 1. `r·p` must be below 2^30. */
   readonly p?: number | undefined;
   /**
-   * The working-memory ceiling in bytes the backend enforces
-   * (`128·r·(N + p + 1)` bytes are needed). Default a little over 1 GiB
-   * (`128·8·(2^20 + 2)`); the reference has no configurable ceiling. Raising maxmem does not bypass
-   * the backend's logN limit or the runtime's allocation limits.
+   * An optional ceiling in bytes on the working memory, `128·r·(N + p + 1)`.
+   * By default there is none, as in the reference, which allocates whatever
+   * the parameters imply; a parameter set above the ceiling is
+   * `InvalidParameter`. A ceiling does not bypass the `logN` limit or the
+   * runtime's allocation limits.
    */
   readonly maxmem?: number | undefined;
 }
@@ -35,8 +47,9 @@ export interface ScryptOptions {
 const SCRYPT_MAX_DKLEN = 0xffffffff * 32;
 
 /**
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s and `options` an object; when `dkLen` is outside its domain
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [0, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -45,12 +58,15 @@ export function scrypt(
   salt: Uint8Array,
   options: ScryptOptions,
 ): Uint8Array<ArrayBuffer> {
+  requireBytes("scrypt password", password);
+  requireBytes("scrypt salt", salt);
+  requireOptions("scrypt options", options, false);
   const parameterised =
     options.logN !== undefined || options.r !== undefined || options.p !== undefined;
   const dkLen = parameterised
     ? expectInt("scrypt dkLen", options.dkLen, 10, 64)
     : expectInt("scrypt dkLen", options.dkLen, 1, SCRYPT_MAX_DKLEN);
-  const logN = expectInt("scrypt logN", options.logN ?? 17, 1, 32);
+  const logN = expectInt("scrypt logN", options.logN ?? 17, 0, 32);
   const r = expectInt("scrypt r", options.r ?? 8, 1, U32_MAX);
   const p = expectInt("scrypt p", options.p ?? 1, 1, U32_MAX);
   // The two shape rules of RFC 7914 §2 that the reference's `scrypt::Params::new` enforces.
@@ -63,19 +79,31 @@ export function scrypt(
   if (r * p >= 2 ** 30) {
     throw CryptoError.invalidParameter("scrypt p", `scrypt r·p must be below 2^30, got ${r * p}`);
   }
+  // No ceiling unless asked: the reference has none. noble's own default (~1 GiB)
+  // would reject parameter sets the reference derives with.
   const maxmem =
     options.maxmem === undefined
-      ? undefined
+      ? Number.MAX_SAFE_INTEGER
       : expectInt("scrypt maxmem", options.maxmem, 1, Number.MAX_SAFE_INTEGER);
+  const N = 2 ** logN;
+  const blockBytes = 128 * r;
+  if (N === 1 || blockBytes * N > SINGLE_BUFFER_LIMIT || blockBytes * p > SINGLE_BUFFER_LIMIT) {
+    // The paged core: for a working buffer too large for one typed array on
+    // JavaScriptCore, and for N = 1, which noble refuses (`2^1 <= N`) and the
+    // reference's crate runs. Same `maxmem` rule and error shape as noble's.
+    const memUsed = blockBytes * (N + p + 1);
+    if (memUsed > maxmem) {
+      throw backendRejected("scrypt parameters")(
+        new Error(`"maxmem" limit was hit: memUsed(128*r*(N+p+1))=${memUsed}, maxmem=${maxmem}`),
+      );
+    }
+    return guard(
+      () => scryptCore(password, salt, { N, r, p, dkLen }),
+      backendRejected("scrypt parameters"),
+    );
+  }
   return guard(
-    () =>
-      nobleScrypt(password, salt, {
-        N: 2 ** logN,
-        r,
-        p,
-        dkLen,
-        ...(maxmem === undefined ? {} : { maxmem }),
-      }),
+    () => nobleScrypt(password, salt, { N, r, p, dkLen, maxmem }),
     backendRejected("scrypt parameters"),
   );
 }
@@ -95,7 +123,8 @@ const ARGON2ID_P = 1;
 
 /**
  * Argon2id with the reference's fixed parameters (m 19456 KiB, t 2, p 1).
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is not an integer ≥ 4
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s and `options` an object; when `dkLen` is not an integer ≥ 4
  * or `salt` is shorter than 8 bytes.
  */
 export function argon2id(
@@ -103,6 +132,9 @@ export function argon2id(
   salt: Uint8Array,
   options: Argon2idOptions,
 ): Uint8Array<ArrayBuffer> {
+  requireBytes("argon2id password", password);
+  requireBytes("argon2id salt", salt);
+  requireOptions("argon2id options", options, false);
   const dkLen = expectInt("argon2id dkLen", options.dkLen, 4, U32_MAX);
   expectMinLength("argon2id salt", salt, 8);
   return guard(

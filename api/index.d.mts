@@ -1,10 +1,5 @@
 import { RandomNumberGenerator, RngOptions, RngOptions as RngOptions$1 } from "@blockchaincommons/rand";
 //#region src/error.d.ts
-/**
- * The single error type thrown by this package.
- *
- * @module error
- */
 /** Machine-readable discriminant for a {@link CryptoError}. */
 type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
 /**
@@ -23,12 +18,17 @@ type CryptoErrorDetails = {
 } | {
   /** A key, point or signature of the right length that is not valid. */
   readonly code: "InvalidData";
-  /** The argument, e.g. `"X25519 public key"`. */
+  /** The argument, e.g. `"ECDSA compressed public key"`. */
   readonly what: string;
 } | {
-  /** A KDF or counter argument outside its domain. */
+  /**
+   * An argument outside its domain: a number that is not an integer of
+   * the Rust width, an options object that is not an object, a boolean
+   * option that is not a boolean, or a byte argument that is not a
+   * `Uint8Array`. Also a KDF parameter set the backend rejects.
+   */
   readonly code: "InvalidParameter";
-  /** The argument, e.g. `"scrypt logN"`. */
+  /** The argument, e.g. `"scrypt logN"` or `"ECDSA message"`. */
   readonly what: string;
 } | {
   /** AEAD authentication failed: wrong key, nonce or aad, or tampered data. */
@@ -37,12 +37,17 @@ type CryptoErrorDetails = {
 /**
  * Thrown for wrong-length keys, nonces, signatures and public keys
  * (`InvalidSize`), a key, point or signature of the right length that is not
- * valid (`InvalidData`), a KDF or counter argument outside its domain
- * (`InvalidParameter`), and AEAD tag mismatch (`AuthenticationFailed`).
+ * valid (`InvalidData`), an argument outside its domain, including a value
+ * of the wrong type (`InvalidParameter`), and AEAD tag mismatch
+ * (`AuthenticationFailed`).
  *
- * Every failure raised by this package is a `CryptoError`; when a backend
- * error is what was caught, it is the `cause`. Instances come from the static
- * factories only.
+ * Every failure of an argument or of a primitive is a `CryptoError`; when a
+ * backend error is what was caught, it is the `cause`. Two things propagate
+ * unwrapped, because they are not this package's: a generator's own error
+ * (`RandError` from `@blockchaincommons/rand`, including `InvalidGenerator`
+ * for a generator that lacks a method the draw calls), and an allocation
+ * failure outside the KDFs (`RangeError` from the engine). Instances come
+ * from the static factories only.
  *
  * @example
  * ```ts
@@ -71,22 +76,24 @@ export declare class CryptoError extends Error {
   static invalidSize(what: string, expected: number, actual: number): CryptoError;
   /** `what` has the right length but is not a valid key, point or signature. */
   static invalidData(what: string, message: string, cause?: unknown): CryptoError;
-  /** `what` (a KDF or counter argument) is outside its domain. */
+  /** `what` (a number, an options object or a byte argument) is outside its domain. */
   static invalidParameter(what: string, message: string, cause?: unknown): CryptoError;
   /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */
   static authenticationFailed(cause?: unknown): CryptoError;
 }
 //#endregion
 //#region src/memzero.d.ts
-/**
- * Best-effort zeroing of secret buffers.
- *
- * @module memzero
- */
+/** The typed arrays {@link memzero} zeroes: every numeric kind, not `BigInt64Array`/`BigUint64Array` or a `DataView`. */
 type NumericTypedArray = Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array;
-/** Overwrite every element with zero. */
+/**
+ * Overwrite every element with zero.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a numeric typed array.
+ */
 export declare function memzero(data: NumericTypedArray): void;
-/** {@link memzero} each array. */
+/**
+ * {@link memzero} each array.
+ * @throws {CryptoError} `InvalidParameter` unless `arrays` is an array of numeric typed arrays.
+ */
 export declare function memzeroAll(arrays: readonly NumericTypedArray[]): void;
 //#endregion
 //#region src/hash.d.ts
@@ -96,35 +103,76 @@ export declare const CRC32_SIZE = 4;
 export declare const SHA256_SIZE = 32;
 /** Bytes in a SHA-512 digest. */
 export declare const SHA512_SIZE = 64;
-/** CRC-32 (IEEE 802.3 / ISO-HDLC) as an unsigned 32-bit integer. */
+/**
+ * CRC-32 (IEEE 802.3 / ISO-HDLC) as an unsigned 32-bit integer.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export declare function crc32(data: Uint8Array): number;
 /** Options for {@link crc32Bytes}. */
 interface Crc32Options {
   /** Emit the checksum little-endian. Default: big-endian. */
   readonly littleEndian?: boolean | undefined;
 }
-/** CRC-32 as four bytes, big-endian unless `littleEndian` is set. */
+/**
+ * CRC-32 as four bytes, big-endian unless `littleEndian` is set.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`,
+ * `options` an object (or absent) and `littleEndian` a boolean (or absent).
+ */
 export declare function crc32Bytes(data: Uint8Array, options?: Crc32Options): Uint8Array<ArrayBuffer>;
-/** SHA-256 of `data` (32 bytes). */
+/**
+ * SHA-256 of `data` (32 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export declare function sha256(data: Uint8Array): Uint8Array<ArrayBuffer>;
-/** `sha256(sha256(data))`, the Bitcoin message hash. */
+/**
+ * `sha256(sha256(data))`, the Bitcoin message hash.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export declare function doubleSha256(data: Uint8Array): Uint8Array<ArrayBuffer>;
-/** SHA-512 of `data` (64 bytes). */
+/**
+ * SHA-512 of `data` (64 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export declare function sha512(data: Uint8Array): Uint8Array<ArrayBuffer>;
-/** HMAC-SHA-256 of `message` under `key` (32 bytes). */
+/**
+ * HMAC-SHA-256 of `message` under `key` (32 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless both arguments are `Uint8Array`s.
+ */
 export declare function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
-/** HMAC-SHA-512 of `message` under `key` (64 bytes). */
+/**
+ * HMAC-SHA-512 of `message` under `key` (64 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless both arguments are `Uint8Array`s.
+ */
 export declare function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
 /** Options for the PBKDF2 functions. */
 interface Pbkdf2Options {
-  /** PBKDF2 iteration count; an integer ≥ 1. */
+  /**
+   * PBKDF2 iteration count; an integer in [0, 2^32 − 1]. 0 derives what 1
+   * does: the reference's `pbkdf2` 0.12.2 computes the first block of each
+   * output block and then `rounds − 1` more, none for 0 or 1.
+   */
   readonly iterations: number;
-  /** Derived key length in bytes. */
+  /**
+   * Derived key length in bytes; an integer in [0, (2^32 − 1) · hLen]
+   * (RFC 8018 §5.2, hLen 32 or 64). 0 is an empty key on both sides. An
+   * allocation the host cannot make surfaces as `InvalidParameter` with the
+   * engine error as `cause`.
+   */
   readonly dkLen: number;
 }
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
+/**
+ * PBKDF2-HMAC-SHA-256.
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s, `options` is an object, `iterations` an integer in
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
+ */
 export declare function pbkdf2Sha256(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
+/**
+ * PBKDF2-HMAC-SHA-512.
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s, `options` is an object, `iterations` an integer in
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
+ */
 export declare function pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 /** Options for the HKDF functions. */
 interface HkdfOptions {
@@ -133,12 +181,14 @@ interface HkdfOptions {
 }
 /**
  * HKDF-SHA-256 with no `info`, `dkLen` output bytes.
- * @throws {CryptoError} `InvalidParameter` unless `dkLen` is an integer in [0, 255 · 32].
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` and `salt`
+ * are `Uint8Array`s, `options` is an object and `dkLen` an integer in [0, 255 · 32].
  */
 export declare function hkdfSha256(keyMaterial: Uint8Array, salt: Uint8Array, options: HkdfOptions): Uint8Array<ArrayBuffer>;
 /**
  * HKDF-SHA-512 with no `info`, `dkLen` output bytes.
- * @throws {CryptoError} `InvalidParameter` unless `dkLen` is an integer in [0, 255 · 64].
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` and `salt`
+ * are `Uint8Array`s, `options` is an object and `dkLen` an integer in [0, 255 · 64].
  */
 export declare function hkdfSha512(keyMaterial: Uint8Array, salt: Uint8Array, options: HkdfOptions): Uint8Array<ArrayBuffer>;
 //#endregion
@@ -151,23 +201,29 @@ interface ScryptOptions {
    * with the defaults any length ≥ 1 is accepted (the reference's default path).
    */
   readonly dkLen: number;
-  /** log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in [1, 32] and below `16·r`. */
+  /**
+   * log₂ of the CPU/memory cost `N`. Default 17 (N = 131072). An integer in
+   * [0, 32] and below `16·r` (`scrypt::Params::new`); 0 is N = 1, which the
+   * reference derives with. Values above 32 need at least 3.3 TiB.
+   */
   readonly logN?: number | undefined;
   /** Block size. Default 8. */
   readonly r?: number | undefined;
   /** Parallelism. Default 1. `r·p` must be below 2^30. */
   readonly p?: number | undefined;
   /**
-   * The working-memory ceiling in bytes the backend enforces
-   * (`128·r·(N + p + 1)` bytes are needed). Default a little over 1 GiB
-   * (`128·8·(2^20 + 2)`); the reference has no configurable ceiling. Raising maxmem does not bypass
-   * the backend's logN limit or the runtime's allocation limits.
+   * An optional ceiling in bytes on the working memory, `128·r·(N + p + 1)`.
+   * By default there is none, as in the reference, which allocates whatever
+   * the parameters imply; a parameter set above the ceiling is
+   * `InvalidParameter`. A ceiling does not bypass the `logN` limit or the
+   * runtime's allocation limits.
    */
   readonly maxmem?: number | undefined;
 }
 /**
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is outside its domain
- * (see {@link ScryptOptions.dkLen}), `logN` not in [1, 32] or not below `16·r`
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s and `options` an object; when `dkLen` is outside its domain
+ * (see {@link ScryptOptions.dkLen}), `logN` not in [0, 32] or not below `16·r`
  * (scrypt requires `N < 2^(128·r/8)`), `r` or `p` not ≥ 1, `r·p` not below
  * 2^30, or the parameters exceed `maxmem`.
  */
@@ -179,7 +235,8 @@ interface Argon2idOptions {
 }
 /**
  * Argon2id with the reference's fixed parameters (m 19456 KiB, t 2, p 1).
- * @throws {CryptoError} `InvalidParameter` when `dkLen` is not an integer ≥ 4
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s and `options` an object; when `dkLen` is not an integer ≥ 4
  * or `salt` is shorter than 8 bytes.
  */
 export declare function argon2id(password: Uint8Array, salt: Uint8Array, options: Argon2idOptions): Uint8Array<ArrayBuffer>;
@@ -198,9 +255,18 @@ interface Chacha20Poly1305 {
   readonly NONCE_SIZE: 12;
   /** Poly1305 tag length in bytes; the trailing bytes of a sealed buffer. */
   readonly TAG_SIZE: 16;
-  /** Returns `ciphertext || tag`; the tag is the trailing 16 bytes. */
+  /**
+   * Returns `ciphertext || tag`; the tag is the trailing 16 bytes.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array` argument;
+   * `InvalidSize` on a wrong-length key or nonce.
+   */
   encrypt(key: Uint8Array, nonce: Uint8Array, plaintext: Uint8Array, options?: AeadOptions): Uint8Array<ArrayBuffer>;
-  /** Takes `ciphertext || tag`. @throws {CryptoError} `AuthenticationFailed` on tag mismatch. */
+  /**
+   * Takes `ciphertext || tag`.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array` argument;
+   * `InvalidSize` on a wrong-length key or nonce, or sealed data shorter
+   * than the tag; `AuthenticationFailed` on tag mismatch.
+   */
   decrypt(key: Uint8Array, nonce: Uint8Array, sealed: Uint8Array, options?: AeadOptions): Uint8Array<ArrayBuffer>;
 }
 /** ChaCha20-Poly1305 (RFC 8439). */
@@ -211,11 +277,13 @@ export declare const chacha20Poly1305: Chacha20Poly1305;
  * The stack's signing-key derivation: HKDF-SHA-256(keyMaterial, salt "signing")
  * → 32 bytes, used for ECDSA, Schnorr and Ed25519 private keys alike
  * (the reference's `derive_signing_private_key` ≡ `ecdsa_derive_private_key`).
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` is a `Uint8Array`.
  */
 export declare function deriveSigningPrivateKey(keyMaterial: Uint8Array): Uint8Array<ArrayBuffer>;
 /**
  * The stack's agreement-key derivation: HKDF-SHA-256(keyMaterial, salt
  * "agreement") → 32 bytes, an X25519 private key.
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` is a `Uint8Array`.
  */
 export declare function deriveAgreementPrivateKey(keyMaterial: Uint8Array): Uint8Array<ArrayBuffer>;
 /** The shape of the {@link x25519} family. */
@@ -224,17 +292,26 @@ interface X25519 {
   readonly PRIVATE_KEY_SIZE: 32;
   /** Public key length in bytes. */
   readonly PUBLIC_KEY_SIZE: 32;
-  /** 32 random bytes from `options.rng` (default secure), unvalidated. */
+  /**
+   * 32 random bytes from `options.rng` (default secure), unvalidated; the
+   * reference's `x25519_new_private_key_using` (`random_data`). A generator's
+   * own error, including rand's `InvalidGenerator`, propagates unwrapped.
+   * @throws {CryptoError} `InvalidParameter` unless `options` is an object or absent.
+   */
   generatePrivateKey(options?: RngOptions$1): Uint8Array<ArrayBuffer>;
   /**
    * The X25519 public key of `privateKey` (clamped per RFC 7748).
-   * @throws {CryptoError} `InvalidSize` on a wrong-length key.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key.
    */
   publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
-   * X25519 Diffie-Hellman, then HKDF-SHA-256 with salt "agreement" → 32 bytes.
-   * @throws {CryptoError} `InvalidData` when `publicKey` is a low-order point
-   * (the reference derives a predictable key instead; divergence D2).
+   * X25519 Diffie-Hellman, then HKDF-SHA-256 with salt "agreement" → 32 bytes
+   * (the reference's `x25519_shared_key`). A low-order `publicKey` (RFC 7748
+   * §6.1) gives the all-zero shared secret and so one fixed key, whatever the
+   * private key: the reference calls x25519-dalek's `diffie_hellman` without
+   * checking `was_contributory`, and neither does this. Reject such peers
+   * yourself before deriving from an untrusted key.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length.
    */
   sharedKey(privateKey: Uint8Array, publicKey: Uint8Array): Uint8Array<ArrayBuffer>;
 }
@@ -254,23 +331,36 @@ interface Ecdsa {
   readonly MESSAGE_HASH_SIZE: 32;
   /** Compact (`r ‖ s`) signature length in bytes. */
   readonly SIGNATURE_SIZE: 64;
-  /** 32 random bytes from `options.rng` (default secure), unvalidated. */
+  /**
+   * 32 random bytes from `options.rng` (default secure), unvalidated; the
+   * reference's `ecdsa_new_private_key_using` (`random_data`). A generator's
+   * own error, including rand's `InvalidGenerator`, propagates unwrapped.
+   * @throws {CryptoError} `InvalidParameter` unless `options` is an object or absent.
+   */
   generatePrivateKey(options?: RngOptions$1): Uint8Array<ArrayBuffer>;
   /**
    * Compressed (33-byte) public key.
-   * @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar (0 or ≥ n).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar (0 or ≥ n).
    */
   publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
-  /** @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the bytes are not a point on the curve. */
+  /** @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length; `InvalidData` when the bytes are not a point on the curve. */
   decompressPublicKey(compressed: Uint8Array): Uint8Array<ArrayBuffer>;
-  /** @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the bytes are not a point on the curve. */
+  /**
+   * 65 bytes: `04 ‖ x ‖ y`, or the hybrid `06`/`07` forms, whose low bit must
+   * equal the parity of y (libsecp256k1's parser, which the reference uses).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length; `InvalidData` when the bytes are not a point on the curve or a hybrid prefix disagrees with y.
+   */
   compressPublicKey(uncompressed: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
    * Deterministic (RFC 6979) signature over `doubleSha256(message)`; 64-byte compact form.
-   * @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
    */
   sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
-  /** `false` on an invalid signature; throws only on wrong-length inputs. */
+  /**
+   * `false` on a signature that does not verify, r or s = 0 and a high s
+   * included (libsecp256k1's `secp256k1_ecdsa_verify`).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not a point on the curve or r or s ≥ n, the reference's `.expect`ed parses (`PublicKey::from_slice`, `Signature::from_compact`).
+   */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
 /** secp256k1 ECDSA: keys, point compression, and RFC 6979 signatures over double SHA-256. */
@@ -290,17 +380,19 @@ interface Schnorr {
   readonly SIGNATURE_SIZE: 64;
   /**
    * x-only (32-byte) public key of a secp256k1 private key.
-   * @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
    */
   publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
-   * BIP-340 signature. Aux-rand comes from `options.auxRand`, else 32 bytes drawn from `options.rng`.
-   * @throws {CryptoError} `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
+   * BIP-340 signature. Aux-rand comes from `options.auxRand`, else 32 bytes
+   * drawn from `options.rng` (the reference's `schnorr_sign_using`,
+   * `random_data(32)`); a generator's own error propagates unwrapped.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array` or a non-object `options`; `InvalidSize` on a wrong length; `InvalidData` when the key is not a valid scalar.
    */
   sign(privateKey: Uint8Array, message: Uint8Array, options?: SchnorrSignOptions): Uint8Array<ArrayBuffer>;
   /**
-   * `false` on an invalid signature or a malformed key (BIP-340 vectors 5–14).
-   * @throws {CryptoError} `InvalidSize` on a wrong-length key or signature.
+   * `false` on a signature that does not verify (BIP-340 vectors 6–13).
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not the x of a point on the curve (BIP-340 vectors 5 and 14), the reference's `.expect`ed `XOnlyPublicKey::from_byte_array`.
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -316,25 +408,35 @@ interface Ed25519 {
   readonly PUBLIC_KEY_SIZE: 32;
   /** Signature length in bytes. */
   readonly SIGNATURE_SIZE: 64;
-  /** 32 random bytes from `options.rng` (default secure). */
+  /**
+   * 32 random bytes from `options.rng` (default secure). The reference's
+   * `ed25519_new_private_key_using` draws through `rand_core`'s `fill_bytes`,
+   * so the generator's `fillBytesPacked` is used when it has one (the packed
+   * stream of `SeededRng`), else `fillBytes` through rand's `fillRandomBytes`.
+   * A generator's own error propagates unwrapped; a `fillBytesPacked` that is
+   * present but not a function is rand's `RandError` `InvalidGenerator`.
+   * @throws {CryptoError} `InvalidParameter` unless `options` is an object or absent.
+   */
   generatePrivateKey(options?: RngOptions$1): Uint8Array<ArrayBuffer>;
   /**
    * The public key of the 32-byte seed `privateKey` (RFC 8032).
-   * @throws {CryptoError} `InvalidSize` on a wrong-length key.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key.
    */
   publicKey(privateKey: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
    * Deterministic RFC 8032 signature (64 bytes).
-   * @throws {CryptoError} `InvalidSize` on a wrong-length key.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key.
    */
   sign(privateKey: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer>;
   /**
    * `(publicKey, signature, message)`, the same order as `ecdsa.verify` and `schnorr.verify`.
    *
-   * Uses the reference's uncofactored verification equation. Only canonical point
-   * encodings are accepted, and a small-order public key or `R` never
-   * verifies. `false` on any invalid or malformed input of the right length.
-   * @throws {CryptoError} `InvalidSize` on a wrong-length key or signature.
+   * Uses the reference's uncofactored verification equation (`verify_strict`):
+   * `false` for a small-order key or `R`, a non-canonical `R`, an `s` ≥ L,
+   * or a signature that does not verify. The key is decoded as the
+   * reference's `VerifyingKey::from_bytes` decodes it (a non-canonical y is
+   * reduced), and its `.unwrap()` on a key with no point is a panic.
+   * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array`; `InvalidSize` on a wrong-length key or signature; `InvalidData` when the key is not a point on the curve.
    */
   verify(publicKey: Uint8Array, signature: Uint8Array, message: Uint8Array): boolean;
 }
@@ -350,12 +452,14 @@ interface Chacha20Options {
 /**
  * XORs `data` with the ChaCha20 keystream for `key` (32 bytes) and `nonce`
  * (12 bytes), starting at block `counter`. Applying it twice restores the
- * input.
- * @throws {CryptoError} `InvalidSize` on a wrong-length key or nonce;
+ * input. There is no `bc-crypto` function for this; it is provenance-mark's
+ * `ChaCha20::new` + `apply_keystream` (the `chacha20` crate).
+ * @throws {CryptoError} `InvalidParameter` on a non-`Uint8Array` argument or
+ * a non-object `options`; `InvalidSize` on a wrong-length key or nonce;
  * `InvalidParameter` if `counter` is outside [0, 2^32 - 2] or the data
  * would use the backend-reserved block counter 2^32 - 1.
  */
-export declare function chacha20(key: Uint8Array, nonce: Uint8Array, data: Uint8Array, { counter }?: Chacha20Options): Uint8Array;
+export declare function chacha20(key: Uint8Array, nonce: Uint8Array, data: Uint8Array, options?: Chacha20Options): Uint8Array<ArrayBuffer>;
 //#endregion
 export type { AeadOptions, Argon2idOptions, Chacha20Options, Chacha20Poly1305, Crc32Options, CryptoErrorCode, CryptoErrorDetails, Ecdsa, Ed25519, HkdfOptions, NumericTypedArray, Pbkdf2Options, RngOptions, Schnorr, SchnorrSignOptions, ScryptOptions, X25519 };
 //# sourceMappingURL=index.d.mts.map

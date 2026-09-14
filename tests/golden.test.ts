@@ -67,7 +67,7 @@ describe("golden: hashes", () => {
 describe("golden: symmetric", () => {
   for (const [n, d] of INPUTS) {
     it(`chacha20poly1305 (${n})`, () => {
-      // Snapshot layout is [ct, tag, ctA, tagA] from the pre-redesign tuple API.
+      // Snapshot layout: [ciphertext, tag, ciphertext with aad, tag with aad].
       const sealed = c.chacha20Poly1305.encrypt(KEY, NONCE, d);
       const sealedA = c.chacha20Poly1305.encrypt(KEY, NONCE, d, { aad: AAD });
       const split = (s: Uint8Array) => [
@@ -164,11 +164,10 @@ describe("golden: keys and signatures", () => {
 });
 
 /**
- * Freeze additions: today's behaviour on inputs known to have edge-case
- * outcomes, recorded verbatim so future changes show up as snapshot diffs
- * rather than silent drift.
+ * Edge cases: outcomes on inputs at the boundary of each primitive's domain,
+ * recorded verbatim so a change is a snapshot diff.
  */
-describe("golden: freeze additions (B1–B5)", () => {
+describe("golden: edge cases", () => {
   const fill = (n: number, v: number): Uint8Array => new Uint8Array(n).fill(v);
   const one = (n: number): Uint8Array => {
     const u = new Uint8Array(n);
@@ -194,20 +193,20 @@ describe("golden: freeze additions (B1–B5)", () => {
   const nonCanonicalRSignature = new Uint8Array(64);
   nonCanonicalRSignature.set(nonCanonicalIdentity, 0);
 
-  it("B1: ed25519.verify on a small-order key / non-canonical encodings (today: true)", () => {
+  it("ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict)", () => {
     expect([
       outcome(() => c.ed25519.verify(identity, identitySignature, msg)),
       outcome(() => c.ed25519.verify(nonCanonicalIdentity, identitySignature, msg)),
       outcome(() => c.ed25519.verify(identity, nonCanonicalRSignature, msg)),
     ]).toMatchSnapshot();
   });
-  it("B2: x25519.sharedKey with a low-order public key (today: noble's Error)", () => {
+  it("x25519.sharedKey with a low-order public key (the reference's all-zero secret: one key)", () => {
     expect([
       outcome(() => c.x25519.sharedKey(PRIV, new Uint8Array(32))),
       outcome(() => c.x25519.sharedKey(PRIV, one(32))),
     ]).toMatchSnapshot();
   });
-  it("B3: verify on malformed keys and signatures of the right length (today: false)", () => {
+  it("verify on malformed keys and signatures of the right length (false, or InvalidData where the reference's parse panics)", () => {
     const ecdsaPub = c.ecdsa.publicKey(PRIV);
     expect([
       outcome(() => c.ecdsa.verify(ecdsaPub, fill(64, 0xff), msg)),
@@ -222,7 +221,7 @@ describe("golden: freeze additions (B1–B5)", () => {
       outcome(() => c.ed25519.verify(c.ed25519.publicKey(PRIV), fill(64, 0xff), msg)),
     ]).toMatchSnapshot();
   });
-  it("B4: domain faults are reported as CryptoError", () => {
+  it("domain faults are reported as CryptoError", () => {
     const n = Uint8Array.from(
       Buffer.from("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", "hex"),
     );
@@ -244,15 +243,15 @@ describe("golden: freeze additions (B1–B5)", () => {
               () => c.ecdsa.compressPublicKey(Uint8Array.from([4, ...fill(64, 1)])),
             ],
             ["scrypt dkLen 0", () => c.scrypt(pw, SALT, { dkLen: 0 })],
-            ["scrypt logN 0", () => c.scrypt(pw, SALT, { dkLen: 32, logN: 0 })],
+            ["scrypt logN -1", () => c.scrypt(pw, SALT, { dkLen: 32, logN: -1 })],
             ["scrypt r 1.5", () => c.scrypt(pw, SALT, { dkLen: 32, r: 1.5 })],
             ["argon2id dkLen 3", () => c.argon2id(pw, SALT, { dkLen: 3 })],
             ["argon2id salt 4", () => c.argon2id(pw, bytes(4), { dkLen: 32 })],
             ["hkdfSha256 length 8161", () => c.hkdfSha256(KEY, SALT, { dkLen: 8161 })],
             ["hkdfSha256 length 1.5", () => c.hkdfSha256(KEY, SALT, { dkLen: 1.5 })],
             [
-              "pbkdf2Sha256 iterations 0",
-              () => c.pbkdf2Sha256(pw, SALT, { iterations: 0, dkLen: 32 }),
+              "pbkdf2Sha256 iterations -1",
+              () => c.pbkdf2Sha256(pw, SALT, { iterations: -1, dkLen: 32 }),
             ],
             ["pbkdf2Sha256 dkLen 0", () => c.pbkdf2Sha256(pw, SALT, { iterations: 1, dkLen: 0 })],
             ["chacha20 counter -1", () => c.chacha20(KEY, NONCE, bytes(8), { counter: -1 })],
@@ -261,7 +260,19 @@ describe("golden: freeze additions (B1–B5)", () => {
       ),
     ).toMatchSnapshot();
   });
-  it("B5: scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
+  it("zero KDF costs derive, as the reference's crates do (scrypt N = 1; PBKDF2 0 rounds as 1)", () => {
+    const pw = text("pw");
+    expect({
+      "scrypt logN 0": outcome(() => c.scrypt(pw, SALT, { dkLen: 32, logN: 0 })),
+      "pbkdf2Sha256 iterations 0": outcome(() =>
+        c.pbkdf2Sha256(pw, SALT, { iterations: 0, dkLen: 32 }),
+      ),
+      "pbkdf2Sha256 iterations 1": outcome(() =>
+        c.pbkdf2Sha256(pw, SALT, { iterations: 1, dkLen: 32 }),
+      ),
+    }).toMatchSnapshot();
+  });
+  it("scrypt output length below the reference's opt bound (parameterised: throw; default: accepted)", () => {
     expect([
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8, logN: 4 })),
       outcome(() => c.scrypt(text("pw"), SALT, { dkLen: 8 })),

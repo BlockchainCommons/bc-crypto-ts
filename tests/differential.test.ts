@@ -1,9 +1,10 @@
 import { ED25519_STRICT_FIXTURES } from "./corpus/ed25519-strict-fixtures";
 /**
- * Differential harness: every corpus recipe through the frozen baseline
- * bundle (with its own inlined pre-redesign rand) AND the working tree;
- * outcomes must be identical except for enumerated tombstones. Error NAMES
- * are compared, not messages.
+ * Differential test: every corpus recipe through the frozen baseline bundle
+ * (the `@bcts/crypto` surface this package replaces, with its own inlined
+ * rand) and through the working tree. Outcomes must be identical except for
+ * the allowed differences below. Only "throws" versus a value is compared,
+ * not error classes or messages.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -13,32 +14,80 @@ import * as baselineMod from "./baseline/crypto-baseline.mjs";
 import * as randBaseline from "./baseline/rand-baseline.mjs";
 import * as src from "../src";
 import * as rand from "@blockchaincommons/rand";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { ed25519 as nobleEd25519 } from "@noble/curves/ed25519.js";
+import { bytesToNumberBE } from "@noble/curves/utils.js";
 import {
   materialize,
+  materializeBytes,
   baselineAdapterFor,
-  redesignedAdapterFor,
+  currentAdapterFor,
+  type Bytes,
   type Recipe,
 } from "./vectors/recipes";
-import { categories, noBaseline } from "./corpus/corpus";
+import {
+  categories,
+  noBaseline,
+  X25519_LOW_ORDER,
+  X25519_LOW_ORDER_HIGH_BIT,
+} from "./corpus/corpus";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const BASELINE_SHA256 = "d3a5a82546fd0424232ba32ea1c1bd485e08f35f3f241edc90c8476fb1559655";
 
-/** The only allowed differences. Error classes changed from AeadError/Error to CryptoError. */
-const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean }[] = [
+/** The reference's key parses, `.expect`ed there (a panic): what the tree reports as `InvalidData`. */
+const parses = (f: () => unknown): boolean => {
+  try {
+    f();
+    return true;
+  } catch {
+    return false;
+  }
+};
+const secpKeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 33 || parses(() => secp256k1.Point.fromBytes(k));
+};
+const xOnlyKeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 32 || parses(() => secp256k1.Point.fromBytes(Uint8Array.of(2, ...k)));
+};
+const ed25519KeyParses = (b: Bytes): boolean => {
+  const k = materializeBytes(b);
+  return k.length !== 32 || parses(() => nobleEd25519.Point.fromBytes(k, true));
+};
+const compactSigParses = (b: Bytes): boolean => {
+  const s = materializeBytes(b);
+  const n = secp256k1.Point.Fn.ORDER;
+  return (
+    s.length !== 64 ||
+    (bytesToNumberBE(s.subarray(0, 32)) < n && bytesToNumberBE(s.subarray(32)) < n)
+  );
+};
+
+/**
+ * Where the tree deliberately differs from the baseline. Within a category, an
+ * entry that matches any recipe must see at least one of them differ, so a
+ * stale entry fails the test.
+ */
+const ALLOWED_DIFFERENCES: { id: string; matches: (r: Recipe) => boolean }[] = [
   {
-    id: "T5-uncofactored-ed25519",
-    landed: true,
+    // The uncofactored equation (`verify_strict`): torsion fixtures the
+    // baseline's cofactored check accepted are rejected.
+    id: "uncofactored-ed25519",
     matches: (r) =>
       r.k === "ed25519Verify" &&
       "hex" in r.sig &&
       ED25519_STRICT_FIXTURES.some((f) => !f.valid && "hex" in r.sig && f.signature === r.sig.hex),
   },
   {
-    // Strict Ed25519 verification (`verify_strict`): the baseline accepts
-    // non-canonical/small-order encodings, the working tree rejects them.
-    id: "T1",
-    landed: true,
+    // Strict Ed25519 verification (`verify_strict`): the baseline accepted
+    // small-order and non-canonical encodings, the tree rejects them. The
+    // reference's decoder reduces a non-canonical y where the tree decodes
+    // canonically; the outcome is the same `false`, because an undecodable
+    // key is `false` on both sides and a decodable non-canonical key is
+    // small-order or would need a discrete logarithm to verify.
+    id: "strict-ed25519-encodings",
     matches: (r) =>
       r.k === "ed25519Verify" &&
       "hex" in r.pub &&
@@ -47,19 +96,45 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
       r.sig.hex.endsWith("00".repeat(32)),
   },
   {
+    // The reference `.expect`s its public-key parses and ECDSA's compact
+    // signature parse: an undecodable key, or an ECDSA r or s ≥ n, is
+    // `InvalidData` on the tree where the baseline returned `false`.
+    id: "verify-parse-panics",
+    matches: (r) =>
+      (r.k === "ecdsaVerify" && (!secpKeyParses(r.pub) || !compactSigParses(r.sig))) ||
+      (r.k === "schnorrVerify" && !xOnlyKeyParses(r.pub)) ||
+      (r.k === "ed25519Verify" && !ed25519KeyParses(r.pub)),
+  },
+  {
+    // A low-order X25519 peer derives the reference's one key (HKDF of the
+    // all-zero secret x25519-dalek's unchecked `diffie_hellman` gives); the
+    // baseline threw.
+    id: "x25519-low-order-peer",
+    matches: (r) =>
+      r.k === "x25519Shared" &&
+      "hex" in r.pub &&
+      [...X25519_LOW_ORDER, ...X25519_LOW_ORDER_HIGH_BIT].includes(r.pub.hex),
+  },
+  {
+    // PBKDF2 `iterations` 0 and scrypt `logN` 0 derive (the reference's
+    // crates run 0 rounds as 1, and N = 1); the baseline's backends refused both.
+    id: "zero-cost-kdf",
+    matches: (r) =>
+      ((r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.iter === 0) ||
+      (r.k === "scrypt" && r.n === 0),
+  },
+  {
     // Seeded Ed25519 key generation draws the reference's packed
     // `fill_bytes` stream (`SeededRng.fillBytesPacked`); the baseline drew
     // one step per byte (`random_data`), which is not what the reference does.
-    id: "T2",
-    landed: true,
+    id: "packed-ed25519-keygen",
     matches: (r) => r.k === "newPriv" && r.alg === "ed25519",
   },
   {
     // scrypt's parameterised path mirrors `scrypt::Params::new`: output length
     // in 10..=64, logN < 16·r, r·p < 2^30. The baseline computed these; the
     // reference panics; the tree throws.
-    id: "T3",
-    landed: true,
+    id: "scrypt-params-new",
     matches: (r) =>
       r.k === "scrypt" &&
       r.n !== undefined &&
@@ -68,16 +143,34 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
   {
     // PBKDF2 with dkLen 0 is an empty key on the tree (as the reference returns);
     // the baseline threw.
-    id: "T4",
-    landed: true,
+    id: "pbkdf2-empty-output",
     matches: (r) =>
       (r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.len === 0 && r.iter >= 1,
+  },
+  {
+    // Hybrid `06`/`07` uncompressed keys compress on the tree, as libsecp256k1
+    // parses them for the reference; the baseline (noble) rejected every
+    // prefix but `04`.
+    id: "hybrid-uncompressed-keys",
+    matches: (r) =>
+      r.k === "ecdsaCompress" &&
+      "hex" in r.pub &&
+      (r.pub.hex.startsWith("06") || r.pub.hex.startsWith("07")),
+  },
+  {
+    // scrypt has no default memory ceiling on the tree (the reference has
+    // none); the baseline kept noble's default of 128·8·(2^20 + 2) bytes.
+    id: "scrypt-no-memory-ceiling",
+    matches: (r) =>
+      r.k === "scrypt" &&
+      r.n !== undefined &&
+      128 * (r.r ?? 8) * (2 ** r.n + (r.p ?? 1) + 1) > 128 * 8 * (2 ** 20 + 2),
   },
 ];
 
 const baseline = baselineAdapterFor(baselineMod, randBaseline);
-const current = redesignedAdapterFor(src, rand);
-// Error class names changed (AeadError/Error -> CryptoError); compare throw-vs-value only.
+const current = currentAdapterFor(src, rand);
+// The two surfaces throw different error classes; only throw versus value is compared.
 const norm = (s: string): string => (s.startsWith("throw:") ? "throw" : s);
 
 describe("differential: baseline vs working tree", () => {
@@ -92,26 +185,26 @@ describe("differential: baseline vs working tree", () => {
     it(`category ${name}`, { timeout: 300_000 }, () => {
       let n = 0;
       const diffs: string[] = [];
-      const landedHits = new Map<string, number>();
-      const landedMatches = new Map<string, number>();
+      const differing = new Map<string, number>();
+      const matched = new Map<string, number>();
       for (const recipe of gen()) {
         if (noBaseline(recipe)) continue;
         n++;
         const a = norm(materialize(baseline, recipe));
         const b = norm(materialize(current, recipe));
         const equal = a === b;
-        const tomb = TOMBSTONES.find((t) => t.matches(recipe));
-        if (tomb?.landed === true) {
-          landedMatches.set(tomb.id, (landedMatches.get(tomb.id) ?? 0) + 1);
-          if (!equal) landedHits.set(tomb.id, (landedHits.get(tomb.id) ?? 0) + 1);
+        const allowed = ALLOWED_DIFFERENCES.find((d) => d.matches(recipe));
+        if (allowed !== undefined) {
+          matched.set(allowed.id, (matched.get(allowed.id) ?? 0) + 1);
+          if (!equal) differing.set(allowed.id, (differing.get(allowed.id) ?? 0) + 1);
         } else if (!equal) {
           diffs.push(`${JSON.stringify(recipe)}: ${a} !== ${b}`);
         }
       }
       expect(n).toBeGreaterThan(0);
       expect(diffs).toEqual([]);
-      for (const [id, matches] of landedMatches)
-        if (matches > 0) expect(landedHits.get(id) ?? 0).toBeGreaterThan(0);
+      for (const [id, count] of matched)
+        if (count > 0) expect(differing.get(id) ?? 0, id).toBeGreaterThan(0);
     });
   }
 });

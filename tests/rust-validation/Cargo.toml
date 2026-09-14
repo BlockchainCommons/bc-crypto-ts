@@ -5,6 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+# The reference: the published crate, whose sources are commit 4f2b791 (tag 0.14.0).
 bc-crypto = "=0.14.0"
 bc-rand = "=0.5.0"
 serde = { version = "1", features = ["derive"] }

@@ -1,6 +1,6 @@
 {
   "name": "@blockchaincommons/crypto",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "type": "module",
   "sideEffects": false,
   "description": "Blockchain Commons Cryptographic Utilities for TypeScript",
@@ -85,7 +85,7 @@
     "node": ">=22.12"
   },
   "dependencies": {
-    "@blockchaincommons/rand": "^1.0.0-beta.2",
+    "@blockchaincommons/rand": "^1.0.0-beta.3",
     "@noble/ciphers": "^2.4.0",
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0"
@@ -99,6 +99,7 @@
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
     "@vitest/coverage-v8": "^5.0.0",
+    "ajv": "^8.20.0",
     "eslint": "^10.10.0",
     "fast-check": "^4.9.0",
     "prettier": "3.9.6",

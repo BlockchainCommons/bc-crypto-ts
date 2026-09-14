@@ -3,9 +3,9 @@
  *
  *   bun scripts/annotate-isolated-declarations.ts [--dry-run]
  *
- * The reference tsconfig enables `isolatedDeclarations`, which the monorepo did
- * not. It requires an explicit type on any exported declaration whose type a
- * single-file emit cannot infer. Most of those are one shape:
+ * `tsconfig.json` enables `isolatedDeclarations`, which requires an explicit
+ * type on any exported declaration whose type a single-file emit cannot
+ * infer. Most of those are one shape:
  *
  *   export const FOO = new Bar(...)        ->  export const FOO: Bar = new Bar(...)
  *   static readonly SIZE = OTHER_CONST     ->  static readonly SIZE: number = ...

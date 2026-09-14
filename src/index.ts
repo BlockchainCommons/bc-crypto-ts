@@ -9,8 +9,11 @@
  *   size constants (`ecdsa.PRIVATE_KEY_SIZE`, `chacha20Poly1305.TAG_SIZE`).
  * - The stack's two key derivations at the root: {@link deriveSigningPrivateKey}
  *   and {@link deriveAgreementPrivateKey}.
- * - Every failure is a {@link CryptoError} with a `code`; a backend's own
- *   error, when there is one, is its `cause`.
+ * - Every failure of an argument or of a primitive is a {@link CryptoError}
+ *   with a `code`; a backend's own error, when there is one, is its `cause`.
+ *   Byte arguments must be `Uint8Array`s (checked before anything else). A
+ *   generator's own error (`RandError`), and allocation failure outside the
+ *   KDFs, propagate as thrown.
  * - Every function that draws randomness takes `{ rng }` ({@link RngOptions}
  *   from `@blockchaincommons/rand`), defaulting to the secure generator.
  *

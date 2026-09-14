@@ -1,12 +1,12 @@
 /**
  * Dependency hygiene gate.
  *
- *   bun scripts/check-deps.ts          # no monorepo leftovers may survive
+ *   bun scripts/check-deps.ts          # no @bcts/* or workspace: dependency
  *   bun scripts/check-deps.ts --zero   # additionally: zero runtime deps
  *
- * The first check is universal: an extracted repository must never ship a
- * `@bcts/*` dependency or a `workspace:` protocol range, both of which are
- * unresolvable outside the bcts monorepo. The `--zero` form additionally
+ * The first check is universal: a published package must never depend on
+ * `@bcts/*` or use a `workspace:` protocol range, neither of which resolves
+ * from the npm registry. The `--zero` form additionally
  * enforces the zero-runtime-dependency policy for the packages that hold it.
  */
 import { readFileSync } from "node:fs";
@@ -23,7 +23,7 @@ let failed = false;
 for (const group of groups) {
   for (const [name, range] of Object.entries(pkg[group] ?? {})) {
     if (name.startsWith("@bcts/")) {
-      console.error(`${group}: "${name}" is a monorepo package and cannot be published.`);
+      console.error(`${group}: "${name}" is a @bcts package and cannot be published.`);
       failed = true;
     }
     if (typeof range === "string" && range.startsWith("workspace:")) {
@@ -42,4 +42,4 @@ if (zero) {
 }
 
 if (failed) process.exit(1);
-console.log(zero ? "zero runtime dependencies" : "no monorepo dependencies");
+console.log(zero ? "zero runtime dependencies" : "no @bcts or workspace: dependencies");

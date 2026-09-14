@@ -7,6 +7,7 @@ import { sha256 as nobleSha256, sha512 as nobleSha512 } from "@noble/hashes/sha2
 import { hmac } from "@noble/hashes/hmac.js";
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
+import { expectBool, requireBytes, requireOptions } from "./error.js";
 import { backendRejected, expectInt, guard, U32_MAX } from "./domain.js";
 
 /** Bytes in a CRC-32 checksum. */
@@ -24,8 +25,12 @@ for (let i = 0; i < 256; i++) {
   CRC32_TABLE[i] = crc >>> 0;
 }
 
-/** CRC-32 (IEEE 802.3 / ISO-HDLC) as an unsigned 32-bit integer. */
+/**
+ * CRC-32 (IEEE 802.3 / ISO-HDLC) as an unsigned 32-bit integer.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export function crc32(data: Uint8Array): number {
+  requireBytes("crc32 data", data);
   let crc = 0xffffffff;
   // Indexed loop: the iterator protocol over a typed array is 2× slower here.
   // eslint-disable-next-line @typescript-eslint/prefer-for-of
@@ -41,59 +46,107 @@ export interface Crc32Options {
   readonly littleEndian?: boolean | undefined;
 }
 
-/** CRC-32 as four bytes, big-endian unless `littleEndian` is set. */
+/**
+ * CRC-32 as four bytes, big-endian unless `littleEndian` is set.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`,
+ * `options` an object (or absent) and `littleEndian` a boolean (or absent).
+ */
 export function crc32Bytes(data: Uint8Array, options?: Crc32Options): Uint8Array<ArrayBuffer> {
+  requireBytes("crc32 data", data);
+  requireOptions("crc32 options", options, true);
+  const littleEndian = expectBool("crc32 littleEndian", options?.littleEndian) ?? false;
   const result = new Uint8Array(4);
-  new DataView(result.buffer).setUint32(0, crc32(data), options?.littleEndian ?? false);
+  new DataView(result.buffer).setUint32(0, crc32(data), littleEndian);
   return result;
 }
 
-/** SHA-256 of `data` (32 bytes). */
+/**
+ * SHA-256 of `data` (32 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export function sha256(data: Uint8Array): Uint8Array<ArrayBuffer> {
+  requireBytes("sha256 data", data);
   return nobleSha256(data);
 }
 
-/** `sha256(sha256(data))`, the Bitcoin message hash. */
+/**
+ * `sha256(sha256(data))`, the Bitcoin message hash.
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export function doubleSha256(data: Uint8Array): Uint8Array<ArrayBuffer> {
-  return sha256(sha256(data));
+  requireBytes("doubleSha256 data", data);
+  return nobleSha256(nobleSha256(data));
 }
 
-/** SHA-512 of `data` (64 bytes). */
+/**
+ * SHA-512 of `data` (64 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless `data` is a `Uint8Array`.
+ */
 export function sha512(data: Uint8Array): Uint8Array<ArrayBuffer> {
+  requireBytes("sha512 data", data);
   return nobleSha512(data);
 }
 
-/** HMAC-SHA-256 of `message` under `key` (32 bytes). */
+/**
+ * HMAC-SHA-256 of `message` under `key` (32 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless both arguments are `Uint8Array`s.
+ */
 export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer> {
+  requireBytes("hmacSha256 key", key);
+  requireBytes("hmacSha256 message", message);
   return hmac(nobleSha256, key, message);
 }
 
-/** HMAC-SHA-512 of `message` under `key` (64 bytes). */
+/**
+ * HMAC-SHA-512 of `message` under `key` (64 bytes).
+ * @throws {CryptoError} `InvalidParameter` unless both arguments are `Uint8Array`s.
+ */
 export function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array<ArrayBuffer> {
+  requireBytes("hmacSha512 key", key);
+  requireBytes("hmacSha512 message", message);
   return hmac(nobleSha512, key, message);
 }
 
 /** Options for the PBKDF2 functions. */
 export interface Pbkdf2Options {
-  /** PBKDF2 iteration count; an integer ≥ 1. */
+  /**
+   * PBKDF2 iteration count; an integer in [0, 2^32 − 1]. 0 derives what 1
+   * does: the reference's `pbkdf2` 0.12.2 computes the first block of each
+   * output block and then `rounds − 1` more, none for 0 or 1.
+   */
   readonly iterations: number;
-  /** Derived key length in bytes. */
+  /**
+   * Derived key length in bytes; an integer in [0, (2^32 − 1) · hLen]
+   * (RFC 8018 §5.2, hLen 32 or 64). 0 is an empty key on both sides. An
+   * allocation the host cannot make surfaces as `InvalidParameter` with the
+   * engine error as `cause`.
+   */
   readonly dkLen: number;
 }
 
-const pbkdf2Domain = (options: Pbkdf2Options): { c: number; dkLen: number } => ({
-  c: expectInt("pbkdf2 iterations", options.iterations, 1, U32_MAX),
+const pbkdf2Domain = (options: Pbkdf2Options, hLen: number): { c: number; dkLen: number } => ({
+  // 0 iterations is 1 in the reference's crate (`for _ in 1..rounds` after the
+  // first block); noble requires c ≥ 1, so the same call is made for both.
+  c: Math.max(1, expectInt("pbkdf2 iterations", options.iterations, 0, U32_MAX)),
   // `dkLen: 0` is an empty key on both sides (the reference fills a zero-length Vec).
-  dkLen: expectInt("pbkdf2 dkLen", options.dkLen, 0, U32_MAX),
+  dkLen: expectInt("pbkdf2 dkLen", options.dkLen, 0, U32_MAX * hLen),
 });
 
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
+/**
+ * PBKDF2-HMAC-SHA-256.
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s, `options` is an object, `iterations` an integer in
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 32].
+ */
 export function pbkdf2Sha256(
   password: Uint8Array,
   salt: Uint8Array,
   options: Pbkdf2Options,
 ): Uint8Array<ArrayBuffer> {
-  const domain = pbkdf2Domain(options);
+  requireBytes("pbkdf2 password", password);
+  requireBytes("pbkdf2 salt", salt);
+  requireOptions("pbkdf2 options", options, false);
+  const domain = pbkdf2Domain(options, SHA256_SIZE);
   if (domain.dkLen === 0) return new Uint8Array(0);
   return guard(
     () => pbkdf2(nobleSha256, password, salt, domain),
@@ -101,13 +154,21 @@ export function pbkdf2Sha256(
   );
 }
 
-/** @throws {CryptoError} `InvalidParameter` unless `iterations` is an integer ≥ 1 and `dkLen` an integer ≥ 0. */
+/**
+ * PBKDF2-HMAC-SHA-512.
+ * @throws {CryptoError} `InvalidParameter` unless `password` and `salt` are
+ * `Uint8Array`s, `options` is an object, `iterations` an integer in
+ * [0, 2^32 − 1] and `dkLen` an integer in [0, (2^32 − 1) · 64].
+ */
 export function pbkdf2Sha512(
   password: Uint8Array,
   salt: Uint8Array,
   options: Pbkdf2Options,
 ): Uint8Array<ArrayBuffer> {
-  const domain = pbkdf2Domain(options);
+  requireBytes("pbkdf2 password", password);
+  requireBytes("pbkdf2 salt", salt);
+  requireOptions("pbkdf2 options", options, false);
+  const domain = pbkdf2Domain(options, SHA512_SIZE);
   if (domain.dkLen === 0) return new Uint8Array(0);
   return guard(
     () => pbkdf2(nobleSha512, password, salt, domain),
@@ -123,13 +184,17 @@ export interface HkdfOptions {
 
 /**
  * HKDF-SHA-256 with no `info`, `dkLen` output bytes.
- * @throws {CryptoError} `InvalidParameter` unless `dkLen` is an integer in [0, 255 · 32].
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` and `salt`
+ * are `Uint8Array`s, `options` is an object and `dkLen` an integer in [0, 255 · 32].
  */
 export function hkdfSha256(
   keyMaterial: Uint8Array,
   salt: Uint8Array,
   options: HkdfOptions,
 ): Uint8Array<ArrayBuffer> {
+  requireBytes("hkdf key material", keyMaterial);
+  requireBytes("hkdf salt", salt);
+  requireOptions("hkdf options", options, false);
   const dkLen = expectInt("hkdf dkLen", options.dkLen, 0, 255 * SHA256_SIZE);
   return guard(
     () => hkdf(nobleSha256, keyMaterial, salt, undefined, dkLen),
@@ -139,13 +204,17 @@ export function hkdfSha256(
 
 /**
  * HKDF-SHA-512 with no `info`, `dkLen` output bytes.
- * @throws {CryptoError} `InvalidParameter` unless `dkLen` is an integer in [0, 255 · 64].
+ * @throws {CryptoError} `InvalidParameter` unless `keyMaterial` and `salt`
+ * are `Uint8Array`s, `options` is an object and `dkLen` an integer in [0, 255 · 64].
  */
 export function hkdfSha512(
   keyMaterial: Uint8Array,
   salt: Uint8Array,
   options: HkdfOptions,
 ): Uint8Array<ArrayBuffer> {
+  requireBytes("hkdf key material", keyMaterial);
+  requireBytes("hkdf salt", salt);
+  requireOptions("hkdf options", options, false);
   const dkLen = expectInt("hkdf dkLen", options.dkLen, 0, 255 * SHA512_SIZE);
   return guard(
     () => hkdf(nobleSha512, keyMaterial, salt, undefined, dkLen),

@@ -1,11 +1,88 @@
 # Changelog
 
-## 1.0.0-beta.2
+## 1.0.0-beta.3 - 2026-09-14
 
-Pending release. Fixes Ed25519 verification and adds reference parameter
-validation. Four behavioral differences remain against published Rust
-`bc-crypto` 0.14.0; see [RUST_DIVERGENCES.md](./RUST_DIVERGENCES.md).
-Ordinary signing and derivation outputs are unchanged.
+Closes the below divergences from the reference, the published `bc-crypto` (tag 0.14.0).
+
+### Changed (breaking)
+
+- **Every argument is type-checked first.** A byte argument that is not a
+  `Uint8Array` (a string, a plain array, an `ArrayBuffer`), an options
+  argument that is not an object, or a `littleEndian` that is not a boolean
+  throws `CryptoError` `InvalidParameter` naming the argument, before any
+  length, domain or backend check. Before, such values leaked engine
+  `TypeError`s, were silently accepted (`crc32([1, 2, 3])` returned a
+  checksum, `ed25519.verify(pk, sig, "msg")` returned `false`) or blamed
+  another argument (`ecdsa.sign(key, "msg")` reported the private key). A
+  `Buffer` and a `Uint8Array` from another realm are accepted. `memzero` and
+  `memzeroAll` require numeric typed arrays.
+- **A low-order X25519 peer derives the reference's key.** For every
+  low-order encoding (RFC 7748 §6.1), `x25519.sharedKey` returns HKDF-SHA-256
+  of the all-zero shared secret, `6ddeb1af…8d6e` whatever the private key,
+  as the reference's `x25519_shared_key` does (x25519-dalek's
+  `diffie_hellman`, which it does not check), instead of throwing
+  `InvalidData` "low-order point". Reject such peers yourself before deriving
+  from an untrusted key.
+- **`verify` throws where the reference's parse panics.** `ecdsa.verify`,
+  `schnorr.verify` and `ed25519.verify` throw `InvalidData` naming the key
+  when it does not decode (the reference `.expect`s `PublicKey::from_slice`
+  and `XOnlyPublicKey::from_byte_array` and `.unwrap()`s
+  `VerifyingKey::from_bytes`), and `ecdsa.verify` throws it for an r or s ≥ n
+  (`Signature::from_compact`); all of these were `false`. An input that
+  parses still verifies or not. `ed25519.verify` decodes the key as dalek
+  does (a non-canonical y reduced), so the 26 non-canonical encodings dalek
+  takes are `false` and the 14 it rejects are `InvalidData`.
+- **Zero KDF costs derive.** PBKDF2 `iterations: 0` computes what 1 does (the
+  reference's `pbkdf2` 0.12.2 runs `rounds − 1` rounds after the first block)
+  and scrypt `logN: 0` derives with N = 1 (`scrypt::Params::new` takes
+  `log_n` 0), where both were rejected.
+- **scrypt has no default memory ceiling.** `maxmem` is an opt-in ceiling;
+  by default the parameters decide, as in the reference. logN 17, r 64
+  (1.07 GiB) now derives (`88d8c775…86f3`), where noble's ~1 GiB default
+  rejected it.
+
+### Added
+
+- **A paged scrypt core for oversize parameter sets.** JavaScriptCore (Bun,
+  Safari) holds at most 2^32 bytes in one typed array; when `128·r·N` or
+  `128·r·p` exceeds 2^31 bytes, `scrypt` derives with an in-package RFC 7914
+  core that keeps `V` and `B` in pages, byte-identical to noble and to the
+  reference (logN 22, r 9 gives `1fc13793…d167` on Bun in about 6 s at
+  4.8 GiB). Smaller sets still go to noble.
+- **Hybrid uncompressed keys.** `ecdsa.compressPublicKey` accepts
+  libsecp256k1's `06`/`07` prefixes when the low bit matches the parity of
+  y, as the reference does; a mismatch is `InvalidData`.
+- **PBKDF2 `dkLen` up to (2^32 − 1)·hLen** (RFC 8018 §5.2; 32 or 64), where
+  the port stopped at 2^32 − 1.
+- `chacha20` returns `Uint8Array<ArrayBuffer>`.
+
+### Validation
+
+- The harness builds against the published crate, unpatched, has no
+  exception list, and parses every argument with the Rust width before the
+  call: a wrong-length
+  fixed argument, sealed data under 16 bytes, a number outside `u8`, `u32`
+  or `usize`, and raw ChaCha20 are js-only, never matches or mismatches.
+  The golden file grew from 679 to 807 vectors: point (de)compression and
+  AEAD decryption success paths, 66 non-canonical Ed25519 A and R rows, 19
+  undecodable-key and r/s ∈ {0, n} verify rows, 28 low-order X25519 rows,
+  6 hybrid keys, the logN 17 r 64 row and 3 width probes. `--full` replays the whole corpus (1195) and `heavy.json` the
+  logN 22, r 9 vector; CI runs all three, plus the heavy vector on Bun and
+  Node. Results: `807 vectors - 793 match, 14 js-only, 0 MISMATCH`;
+  `1195 - 1180, 15, 0`; `1 - 1, 0, 0`.
+- Tests: an argument-type property over every exported function, the
+  Ed25519 decoder boundary (dalek decodes 26 of the 40 non-canonical
+  encodings and so does the port: `false` for those as A, `InvalidData` for
+  the 14 it rejects, `false` for all 40 as R), a verify-outcome property (a
+  boolean, or `InvalidData` naming the key), the Ed25519 packed and fallback generator
+  paths, malformed generators propagating rand's `InvalidGenerator`
+  unwrapped, backend spies for the PBKDF2 bound and the scrypt ceiling, and
+  the paged core against noble under one-block, three-block and default
+  pages plus the RFC 7914 vectors.
+
+## 1.0.0-beta.2 - 2026-09-12
+
+Fixes Ed25519 verification and adds reference parameter validation.
 
 ### Fixed
 
@@ -60,20 +137,6 @@ Ordinary signing and derivation outputs are unchanged.
   reports 649 matches and 30 expected-divergence/JS-only cases, with no
   unexpected mismatches.
 
-### Internal
-
-- `RUST_DIVERGENCES.md` now records exactly four divergences, each kept
-  on purpose: low-order X25519 peer keys (rejected here, a predictable key
-  there), `verify` on malformed encodings (`false` here, a panic there -
-  BIP-340 and RFC 8032 specify `false`), scrypt `logN: 0`, and PBKDF2
-  `iterations: 0` (the reference's crate treats it as one).
-- The Rust harness allows only exact reviewed divergence recipes and checks
-  the expected HKDF-of-zero output for low-order X25519 peers. Its `--strict`
-  mode disables behavioral exceptions for candidate reference versions.
-- Expanded the golden corpus to 679 vectors, including Ed25519 torsion,
-  PBKDF2 zero-cost/empty-output, X25519 encodings, scrypt parameter rules,
-  empty HKDF salt, and non-canonical Ed25519 scalar cases.
-
-## 1.0.0-beta.1
+## 1.0.0-beta.1 - 2026-09-12
 
 Initial beta implementation.
