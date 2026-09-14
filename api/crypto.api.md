@@ -21,7 +21,7 @@ export interface Argon2idOptions {
 }
 
 // @public
-export function chacha20(key: Uint8Array, nonce: Uint8Array, data: Uint8Array, input?: Chacha20Options): Uint8Array;
+export function chacha20(key: Uint8Array, nonce: Uint8Array, data: Uint8Array, options?: Chacha20Options): Uint8Array<ArrayBuffer>;
 
 // @public
 export interface Chacha20Options {
@@ -65,10 +65,11 @@ export class CryptoError extends Error {
     is(code: CryptoErrorCode): boolean;
     static isCryptoError(value: unknown): value is CryptoError;
     override readonly name = "CryptoError";
+    static nonContributoryKey(cause?: unknown): CryptoError;
 }
 
 // @public
-export type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
+export type CryptoErrorCode = "InvalidSize" | "InvalidData" | "InvalidParameter" | "NonContributoryKey" | "AuthenticationFailed";
 
 // @public
 export type CryptoErrorDetails = {
@@ -81,6 +82,9 @@ export type CryptoErrorDetails = {
     readonly what: string;
 } | {
     readonly code: "InvalidParameter";
+    readonly what: string;
+} | {
+    readonly code: "NonContributoryKey";
     readonly what: string;
 } | {
     readonly code: "AuthenticationFailed";
@@ -97,7 +101,6 @@ export function doubleSha256(data: Uint8Array): Uint8Array<ArrayBuffer>;
 
 // @public
 export interface Ecdsa {
-    // (undocumented)
     compressPublicKey(uncompressed: Uint8Array): Uint8Array<ArrayBuffer>;
     // (undocumented)
     decompressPublicKey(compressed: Uint8Array): Uint8Array<ArrayBuffer>;
@@ -161,10 +164,10 @@ export interface Pbkdf2Options {
     readonly iterations: number;
 }
 
-// @public (undocumented)
+// @public
 export function pbkdf2Sha256(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 
-// @public (undocumented)
+// @public
 export function pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, options: Pbkdf2Options): Uint8Array<ArrayBuffer>;
 
 export { RngOptions }

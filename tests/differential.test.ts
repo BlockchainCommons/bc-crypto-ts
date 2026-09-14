@@ -24,7 +24,10 @@ import { categories, noBaseline } from "./corpus/corpus";
 const here = dirname(fileURLToPath(import.meta.url));
 const BASELINE_SHA256 = "d3a5a82546fd0424232ba32ea1c1bd485e08f35f3f241edc90c8476fb1559655";
 
-/** The only allowed differences. Error classes changed from AeadError/Error to CryptoError. */
+/**
+ * Allowed differences between the pre-redesign baseline and the tree; error
+ * class names are not compared (only whether a recipe throws or has a value).
+ */
 const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean }[] = [
   {
     id: "T5-uncofactored-ed25519",
@@ -35,8 +38,12 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
       ED25519_STRICT_FIXTURES.some((f) => !f.valid && "hex" in r.sig && f.signature === r.sig.hex),
   },
   {
-    // Strict Ed25519 verification (`verify_strict`): the baseline accepts
-    // non-canonical/small-order encodings, the working tree rejects them.
+    // Strict Ed25519 verification (`verify_strict`): the baseline accepted
+    // small-order and non-canonical encodings, the tree rejects them. The
+    // reference's decoder reduces a non-canonical y where the tree decodes
+    // canonically; the outcome is the same `false`, because an undecodable
+    // key is `false` on both sides and a decodable non-canonical key is
+    // small-order or would need a discrete logarithm to verify.
     id: "T1",
     landed: true,
     matches: (r) =>
@@ -72,6 +79,27 @@ const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean
     landed: true,
     matches: (r) =>
       (r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.len === 0 && r.iter >= 1,
+  },
+  {
+    // Hybrid `06`/`07` uncompressed keys compress on the tree, as libsecp256k1
+    // parses them for the reference; the baseline (noble) rejected every
+    // prefix but `04`.
+    id: "T9-hybrid-uncompressed",
+    landed: true,
+    matches: (r) =>
+      r.k === "ecdsaCompress" &&
+      "hex" in r.pub &&
+      (r.pub.hex.startsWith("06") || r.pub.hex.startsWith("07")),
+  },
+  {
+    // scrypt has no default memory ceiling on the tree (the reference has
+    // none); the baseline kept noble's default of 128·8·(2^20 + 2) bytes.
+    id: "T10-scrypt-maxmem",
+    landed: true,
+    matches: (r) =>
+      r.k === "scrypt" &&
+      r.n !== undefined &&
+      128 * (r.r ?? 8) * (2 ** r.n + (r.p ?? 1) + 1) > 128 * 8 * (2 ** 20 + 2),
   },
 ];
 

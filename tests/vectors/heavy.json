@@ -1,0 +1,22 @@
+{
+ "count": 1,
+ "vectors": [
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 22,
+    "r": 9,
+    "p": 1
+   },
+   "expect": "1fc13793fa6a921c6fa806a0856afdebfb744877768dc12a330351129593d167"
+  }
+ ]
+}

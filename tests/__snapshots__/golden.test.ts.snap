@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`golden: freeze additions (B1–B5) > B1: ed25519.verify on a small-order key / non-canonical encodings (today: true) 1`] = `
+exports[`golden: freeze additions (B1–B5) > B1: ed25519.verify on a small-order key / non-canonical encodings (false, as verify_strict) 1`] = `
 [
   "false",
   "false",
@@ -8,14 +8,14 @@ exports[`golden: freeze additions (B1–B5) > B1: ed25519.verify on a small-orde
 ]
 `;
 
-exports[`golden: freeze additions (B1–B5) > B2: x25519.sharedKey with a low-order public key (today: noble's Error) 1`] = `
+exports[`golden: freeze additions (B1–B5) > B2: x25519.sharedKey with a low-order public key (the reference's NonContributoryKey) 1`] = `
 [
-  "throw:CryptoError:low-order point",
-  "throw:CryptoError:low-order point",
+  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
+  "throw:CryptoError:X25519 peer key produces an all-zero shared secret",
 ]
 `;
 
-exports[`golden: freeze additions (B1–B5) > B3: verify on malformed keys and signatures of the right length (today: false) 1`] = `
+exports[`golden: freeze additions (B1–B5) > B3: verify on malformed keys and signatures of the right length (false on both sides) 1`] = `
 [
   "false",
   "false",

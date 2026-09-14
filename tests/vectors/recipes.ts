@@ -4,7 +4,8 @@
  * Every argument is named, so an API refactor changes only the adapters.
  * Byte inputs are hex or cycling-byte descriptions; the
  * seeded RNG is a four-word seed. Outcomes are hex strings, booleans as
- * "1"/"0", or `throw:<ErrorName>` (message-independent).
+ * "1"/"0", or `throw:<ErrorName>` (message-independent), except that an
+ * `x25519Shared` `CryptoError` renders as `throw:<code>|<message>`.
  *
  * Recipe semantics are FROZEN.
  */
@@ -26,7 +27,7 @@ export type Recipe =
   /** `n` is log2(N), the exponent, as the underlying API takes it. */
   | { k: "scrypt"; pw: Bytes; salt: Bytes; len: number; n?: number; r?: number; p?: number }
   | { k: "argon2id"; pw: Bytes; salt: Bytes; len: number }
-  /** Raw ChaCha20 keystream — JS-only (report A6); `counter` is the initial block counter. */
+  /** Raw ChaCha20 keystream — no `bc-crypto` function (js-only J1); `counter` is the initial block counter. */
   | { k: "chacha20"; key: Bytes; nonce: Bytes; d: Bytes; counter?: number }
   | { k: "aeadEncrypt"; pt: Bytes; key: Bytes; nonce: Bytes; aad?: Bytes }
   | { k: "aeadDecrypt"; ct: Bytes; key: Bytes; nonce: Bytes; aad?: Bytes }
@@ -203,6 +204,12 @@ export function materialize(api: VectorApi, r: Recipe): string {
         return bytesToHex(api.newPriv(r.alg, api.makeRng(seedOf(r.seed))));
     }
   } catch (e) {
+    // `x25519Shared` failures carry the error value: the reference's
+    // `try_x25519_shared_key` returns `Err(NonContributoryKey)` with a Display
+    // text, and the harness compares code and message for this kind.
+    if (r.k === "x25519Shared" && e instanceof Error && e.name === "CryptoError" && "code" in e) {
+      return `throw:${String(e.code)}|${e.message}`;
+    }
     return `throw:${e instanceof Error ? e.name : "Error"}`;
   }
 }

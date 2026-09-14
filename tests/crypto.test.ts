@@ -22,7 +22,14 @@ import {
   memzero,
   CryptoError,
 } from "../src/index.js";
-import { SecureRng, SeededRng, randomBytes, testRandomBytes } from "@blockchaincommons/rand";
+import {
+  type RandomNumberGenerator,
+  RandError,
+  SecureRng,
+  SeededRng,
+  randomBytes,
+  testRandomBytes,
+} from "@blockchaincommons/rand";
 
 // Helper to convert hex string to Uint8Array
 function hexToBytes(hex: string): Uint8Array {
@@ -955,12 +962,143 @@ describe("CryptoError", () => {
       expect((e as CryptoError).code).toBe("AuthenticationFailed");
     }
   });
-  test("verify never throws on malformed signatures of the right length", () => {
+  test("verify returns false and never throws for malformed keys and signatures of the right length", () => {
+    // The reference's `let Ok(..) = … else { return false; }` on every parse failure.
     const priv = new Uint8Array(32).fill(7);
+    const msg = new Uint8Array(0);
     const bad = new Uint8Array(64).fill(0xff);
-    expect(ecdsa.verify(ecdsa.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
-    expect(schnorr.verify(schnorr.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
-    expect(ed25519.verify(ed25519.publicKey(priv), bad, new Uint8Array(0))).toBe(false);
+    const ff32 = new Uint8Array(32).fill(0xff);
+    const hex = (h: string): Uint8Array => Uint8Array.from(Buffer.from(h, "hex"));
+    // signatures
+    expect(ecdsa.verify(ecdsa.publicKey(priv), bad, msg)).toBe(false);
+    expect(schnorr.verify(schnorr.publicKey(priv), bad, msg)).toBe(false);
+    expect(ed25519.verify(ed25519.publicKey(priv), bad, msg)).toBe(false);
+    // keys the parsers reject: x ≥ p (ECDSA, Schnorr) and an undecodable Ed25519 y
+    const ecSig = ecdsa.sign(priv, msg);
+    expect(ecdsa.verify(Uint8Array.from([2, ...ff32]), ecSig, msg)).toBe(false);
+    expect(
+      ecdsa.verify(
+        hex("02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"),
+        ecSig,
+        msg,
+      ),
+    ).toBe(false);
+    expect(
+      schnorr.verify(ff32, schnorr.sign(priv, msg, { auxRand: new Uint8Array(32) }), msg),
+    ).toBe(false);
+    // y = p + 2 with the sign bit clear: no square root, so dalek and noble both fail to decode.
+    expect(
+      ed25519.verify(
+        hex("efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
+        ed25519.sign(priv, msg),
+        msg,
+      ),
+    ).toBe(false);
+    // r or s in {0, n}
+    const n = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141";
+    const one = "00".repeat(31) + "01";
+    const zero = "00".repeat(32);
+    for (const sig of [zero + one, n + one, one + n, one + zero]) {
+      expect(ecdsa.verify(ecdsa.publicKey(priv), hex(sig), msg)).toBe(false);
+    }
+  });
+});
+
+describe("generators (the reference's rand_core paths)", () => {
+  const hex = (b: Uint8Array): string => Buffer.from(b).toString("hex");
+  test("ed25519 draws the packed stream when the generator has one, else fillBytes", () => {
+    // `ed25519_new_private_key_using` reaches the generator through
+    // `RngCore::fill_bytes`: on the seeded generator that is the packed
+    // stream (`fillBytesPacked`); a generator without one gives the same
+    // bytes as `randomBytes` (one 64-bit step per byte).
+    const packed = ed25519.generatePrivateKey({ rng: SeededRng.forTesting() });
+    const seeded = SeededRng.forTesting();
+    const viaPacked = new Uint8Array(32);
+    seeded.fillBytesPacked(viaPacked);
+    expect(hex(packed)).toBe(hex(viaPacked));
+    expect(hex(packed).startsWith("7e061813")).toBe(true);
+
+    const inner = SeededRng.forTesting();
+    const fallbackOnly: RandomNumberGenerator = {
+      nextU32: () => inner.nextU32(),
+      nextU64: () => inner.nextU64(),
+      fillBytes: (dest) => inner.fillBytes(dest),
+    };
+    const fallback = ed25519.generatePrivateKey({ rng: fallbackOnly });
+    expect(hex(fallback)).toBe(hex(randomBytes(32, { rng: SeededRng.forTesting() })));
+    expect(hex(fallback).startsWith("7eb559bb")).toBe(true);
+    expect(hex(fallback)).not.toBe(hex(packed));
+  });
+  test("a generator that lacks a method throws rand's InvalidGenerator, unwrapped", () => {
+    const empty = { rng: {} as RandomNumberGenerator };
+    const cases: [string, () => unknown][] = [
+      ["x25519.generatePrivateKey", () => x25519.generatePrivateKey(empty)],
+      ["ecdsa.generatePrivateKey", () => ecdsa.generatePrivateKey(empty)],
+      [
+        "schnorr.sign without auxRand",
+        () => schnorr.sign(new Uint8Array(32).fill(7), new Uint8Array(1), empty),
+      ],
+      ["ed25519.generatePrivateKey", () => ed25519.generatePrivateKey(empty)],
+    ];
+    for (const [name, f] of cases) {
+      let err: unknown;
+      try {
+        f();
+      } catch (e) {
+        err = e;
+      }
+      expect(RandError.isRandError(err), name).toBe(true);
+      expect(RandError.isRandError(err) && err.code, name).toBe("InvalidGenerator");
+      expect(
+        RandError.isRandError(err) && err.details.code === "InvalidGenerator" && err.details.method,
+        name,
+      ).toBe("fillBytes");
+      expect(CryptoError.isCryptoError(err), name).toBe(false);
+      expect(err instanceof TypeError, name).toBe(false);
+    }
+    // A `fillBytesPacked` that is present but not a function (rand never calls it).
+    let err: unknown;
+    try {
+      ed25519.generatePrivateKey({
+        rng: { fillBytesPacked: 1, fillBytes() {} } as unknown as RandomNumberGenerator,
+      });
+    } catch (e) {
+      err = e;
+    }
+    expect(
+      RandError.isRandError(err) && err.details.code === "InvalidGenerator" && err.details.method,
+    ).toBe("fillBytesPacked");
+  });
+});
+
+describe("ECDSA hybrid uncompressed keys (libsecp256k1's 06/07 prefixes)", () => {
+  const hex = (h: string): Uint8Array => Uint8Array.from(Buffer.from(h, "hex"));
+  const GX = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+  const GY = "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8";
+  const NEG_GY = "b7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777";
+  test("a prefix that states y's parity compresses like 04", () => {
+    expect(Buffer.from(ecdsa.compressPublicKey(hex("06" + GX + GY))).toString("hex")).toBe(
+      "02" + GX,
+    );
+    expect(Buffer.from(ecdsa.compressPublicKey(hex("07" + GX + NEG_GY))).toString("hex")).toBe(
+      "03" + GX,
+    );
+  });
+  test("a prefix that contradicts y's parity, an unknown prefix or x >= p is InvalidData", () => {
+    for (const bad of [
+      "07" + GX + GY,
+      "06" + GX + NEG_GY,
+      "05" + GX + GY,
+      "06" + "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30" + GY,
+    ]) {
+      let err: unknown;
+      try {
+        ecdsa.compressPublicKey(hex(bad));
+      } catch (e) {
+        err = e;
+      }
+      expect(CryptoError.isCryptoError(err) && err.code).toBe("InvalidData");
+    }
   });
 });
 

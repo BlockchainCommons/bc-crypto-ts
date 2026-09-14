@@ -57,3 +57,59 @@ jobs:
 
       - name: Check dependency hygiene
         run: bun run check:deps
+
+  rust-validation:
+    name: Cross-validate vectors against the Rust reference
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The reference is bc-crypto-rust at 4f2b791 plus the input-validation
+      # edits kept in tests/rust-validation/reference/, materialised at the
+      # path the harness's [patch.crates-io] names. This step goes with the
+      # patch once the release that contains the edits ships.
+      - name: Materialise the reference (bc-crypto-rust 4f2b791 + edits)
+        run: |
+          ref="$GITHUB_WORKSPACE/../../../bc-rust/bc-crypto-rust"
+          git clone --quiet https://github.com/BlockchainCommons/bc-crypto-rust.git "$ref"
+          git -C "$ref" checkout --quiet 4f2b791320730578b04943c833c4a9e6c232fc4d
+          git -C "$ref" apply --verbose "$GITHUB_WORKSPACE/tests/rust-validation/reference/bc-crypto-rust-4f2b791-edits.patch"
+
+      # The whole corpus (tests/corpus/corpus.ts `allRecipes()`)
+      - name: Materialise the full corpus
+        run: bun scripts/generate-vectors.ts --full "${{ runner.temp }}/crypto-full-corpus.json"
+
+      # The runner image ships a stable Rust toolchain
+      - name: Validate the golden vectors against the reference
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked -- ../vectors/vectors.json
+
+      - name: Validate the full corpus against the reference
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked -- "${{ runner.temp }}/crypto-full-corpus.json"
+
+      # scrypt logN 22, r 9: about 5 GiB per step, run one after another
+      - name: Validate the heavy vectors against the reference
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked -- ../vectors/heavy.json
+
+      - name: Check the heavy vectors on JavaScriptCore (Bun)
+        run: bun scripts/check-heavy-vectors.ts
+
+      - name: Check the heavy vectors on Node
+        run: CRYPTO_HEAVY=1 bunx vitest run tests/heavy-vectors.test.ts

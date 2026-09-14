@@ -1,5 +1,5 @@
 {
- "count": 679,
+ "count": 807,
  "vectors": [
   {
    "recipe": {
@@ -9707,6 +9707,1281 @@
   },
   {
    "recipe": {
+    "k": "ecdsaVerify",
+    "pub": {
+     "hex": "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0"
+    },
+    "sig": {
+     "hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaVerify",
+    "pub": {
+     "hex": "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0"
+    },
+    "sig": {
+     "hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd03641410000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaVerify",
+    "pub": {
+     "hex": "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0"
+    },
+    "sig": {
+     "hex": "0000000000000000000000000000000000000000000000000000000000000001fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaVerify",
+    "pub": {
+     "hex": "0284bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0"
+    },
+    "sig": {
+     "hex": "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaVerify",
+    "pub": {
+     "hex": "02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"
+    },
+    "sig": {
+     "hex": "7817c1ef7da0216b52440f59d066ddcf82fd78754ec07b4b6fc05f4b7ad3482b7a4041c2e0885d313a6bd751aa210818a66cfeda154095a98b5f06dcf4868967"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f9ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f9ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "faffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "faffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f6ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f6ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "f7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fbffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fbffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "0100000000000000000000000000000000000000000000000000000000000080"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "sig": {
+     "hex": "6cf286acd41b5bc4c0b038d6b2479805be207b853245738ea7e9acbe4d3c56d9383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f6ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f6ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f9ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "f9ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "faffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "faffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fbffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fbffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "0100000000000000000000000000000000000000000000000000000000000080383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
+    "k": "ed25519Verify",
+    "pub": {
+     "hex": "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
+    },
+    "sig": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff383ac725021660759eca2817744ad0604b1d5e68d1b742d0abcf0e14adeb0601"
+    },
+    "msg": {
+     "hex": "07"
+    }
+   },
+   "expect": "0"
+  },
+  {
+   "recipe": {
     "k": "x25519Shared",
     "priv": {
      "cycle": 32,
@@ -9716,7 +10991,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9729,7 +11004,7 @@
      "hex": "0100000000000000000000000000000000000000000000000000000000000000"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9742,7 +11017,7 @@
      "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9755,7 +11030,7 @@
      "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9768,7 +11043,7 @@
      "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9781,7 +11056,7 @@
      "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9794,7 +11069,7 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9807,7 +11082,7 @@
      "hex": "0000000000000000000000000000000000000000000000000000000000000080"
     }
    },
-   "expect": "throw:CryptoError"
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
   },
   {
    "recipe": {
@@ -9820,7 +11095,351 @@
      "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     }
    },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "0100000000000000000000000000000000000000000000000000000000000080"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "0100000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "0000000000000000000000000000000000000000000000000000000000000080"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "0100000000000000000000000000000000000000000000000000000000000080"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+   },
+   "expect": "throw:NonContributoryKey|X25519 peer key produces an all-zero shared secret"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 1
+    },
+    "pub": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "8df9ca6b3b1ee1979975a3a79dc75ddf71aeb4b027a5f9e77aa2fdb365f5a95a"
+  },
+  {
+   "recipe": {
+    "k": "x25519Shared",
+    "priv": {
+     "cycle": 32,
+     "start": 153
+    },
+    "pub": {
+     "hex": "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+    }
+   },
+   "expect": "a68194e994abd0916af111265577eced74d3e1bf46f1bccf127931bb14ffd6ee"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0679be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+    }
+   },
+   "expect": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0779be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+    }
+   },
    "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0779be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798b7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777"
+    }
+   },
+   "expect": "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0679be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798b7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0579be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "06fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 17,
+    "r": 64,
+    "p": 1
+   },
+   "expect": "88d8c7754d2123a4992c89a8748dc2b23c5af68cc545f85b0ea27d0ab4f686f3"
   },
   {
    "recipe": {
@@ -10323,6 +11942,210 @@
     "counter": 1
    },
    "expect": "105dd85955e2c399f053c842e5d893934bae41aac80afaab9605c57345ea1c1d75d5edc1907f4e1e536510fcbc6f701e1bf0aad5cdacea197fc03dc725df1602"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 256,
+    "r": 8,
+    "p": 1
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "pbkdf2Sha256",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "iter": 4294967296,
+    "len": 32
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "scrypt",
+    "pw": {
+     "text": "pw"
+    },
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "len": 32,
+    "n": 4,
+    "r": 4294967297,
+    "p": 1
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaDecompress",
+    "pub": {
+     "hex": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+    }
+   },
+   "expect": "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaDecompress",
+    "pub": {
+     "hex": "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+    }
+   },
+   "expect": "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798b7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaDecompress",
+    "pub": {
+     "hex": "020000000000000000000000000000000000000000000000000000000000000001"
+    }
+   },
+   "expect": "0400000000000000000000000000000000000000000000000000000000000000014218f20ae6c646b363db68605822fb14264ca8d2587fdd6fbc750d587e76a7ee"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaDecompress",
+    "pub": {
+     "hex": "02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+    }
+   },
+   "expect": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "0400000000000000000000000000000000000000000000000000000000000000014218f20ae6c646b363db68605822fb14264ca8d2587fdd6fbc750d587e76a7ee"
+    }
+   },
+   "expect": "020000000000000000000000000000000000000000000000000000000000000001"
+  },
+  {
+   "recipe": {
+    "k": "ecdsaCompress",
+    "pub": {
+     "hex": "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc304218f20ae6c646b363db68605822fb14264ca8d2587fdd6fbc750d587e76a7ee"
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "aeadDecrypt",
+    "ct": {
+     "hex": "e19e646c4637d22fc5ef5b23ea7a2c99eb2a042ad2377566f86b65"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 0
+    },
+    "nonce": {
+     "cycle": 12,
+     "start": 0
+    },
+    "aad": {
+     "text": "ad"
+    }
+   },
+   "expect": "68656c6c6f20776f726c64"
+  },
+  {
+   "recipe": {
+    "k": "aeadDecrypt",
+    "ct": {
+     "hex": "e19e646c4637d22fc5ef5b23ea7a2c99eb2a042ad2377566f86b65"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 0
+    },
+    "nonce": {
+     "cycle": 12,
+     "start": 0
+    }
+   },
+   "expect": "throw:CryptoError"
+  },
+  {
+   "recipe": {
+    "k": "aeadDecrypt",
+    "ct": {
+     "hex": "e19e646c4637d22fc5ef5b18f74a8dd13d3bbce0be3ebb508fb959"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 0
+    },
+    "nonce": {
+     "cycle": 12,
+     "start": 0
+    }
+   },
+   "expect": "68656c6c6f20776f726c64"
+  },
+  {
+   "recipe": {
+    "k": "aeadDecrypt",
+    "ct": {
+     "hex": "295a498b8841a1c5f55d4d606f731159"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 0
+    },
+    "nonce": {
+     "cycle": 12,
+     "start": 0
+    }
+   },
+   "expect": ""
+  },
+  {
+   "recipe": {
+    "k": "aeadDecrypt",
+    "ct": {
+     "hex": "295a498b8841a1c5f55d4d606f731159"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 0
+    },
+    "nonce": {
+     "cycle": 12,
+     "start": 0
+    },
+    "aad": {
+     "cycle": 0,
+     "start": 0
+    }
+   },
+   "expect": ""
   }
  ]
 }

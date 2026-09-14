@@ -53,6 +53,8 @@ try {
 }
 ```
 
+Every byte argument must be a `Uint8Array` (a `Buffer` qualifies); a string, array or `ArrayBuffer` is `CryptoError` `InvalidParameter`, named after the argument, before any other check. A low-order X25519 peer is `NonContributoryKey`, with the reference's message.
+
 `memzero(bytes)` and `memzeroAll(arrays)` overwrite a typed array with zeros as a best effort. JavaScript has no volatile writes and an engine may keep copies of a buffer, so treat them as defence in depth, not as a guarantee that a key has left memory.
 
 Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons/bc-crypto-ts/tree/master/examples) directory.
@@ -63,7 +65,7 @@ Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons
 
 ### Version History
 
-
+- **Unreleased** - Every argument is type-checked before anything else (a non-`Uint8Array` byte argument is `InvalidParameter`); a low-order X25519 peer is `NonContributoryKey` with the reference's message; scrypt has no default memory ceiling and derives oversize parameter sets through a paged core on JavaScriptCore; hybrid `06`/`07` uncompressed keys compress; PBKDF2 accepts `dkLen` up to (2^32 − 1)·hLen. The Rust harness runs against the reference tree with no exception list, on the golden file, the full corpus and a heavy vector, in CI.
 - **1.0.0-beta.2 (September 12, 2026)** - Ed25519 uses the Rust reference's uncofactored verification equation; ChaCha20 counter-overflow reports `InvalidParameter`; scrypt validates its backend limits. scrypt mirrors the reference's parameter rules (`logN < 16·r`, `r·p < 2^30`, the parameterised path's `10..=64` output length) and gains `maxmem`; PBKDF2 accepts `dkLen: 0` with positive iterations; argon2id keeps only the reference's fixed costs.
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
 

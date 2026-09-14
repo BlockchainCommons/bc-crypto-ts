@@ -245,8 +245,9 @@ const FF64 = "ff".repeat(64);
 /**
  * Every encoding of a low-order point (RFC 7748 §6.1, little-endian): 0, 1,
  * the two order-8 points, p − 1, p, p + 1, and (bit 255 is masked on both
- * sides) two of them with the high bit set. The reference derives the same
- * zero-secret key for all of them; the port rejects them (D2).
+ * sides) two of them with the high bit set. The reference's
+ * `try_x25519_shared_key` returns `Err(NonContributoryKey)` for every one;
+ * the port throws `CryptoError` `NonContributoryKey` with the same message.
  */
 export const X25519_LOW_ORDER: string[] = [
   "0000000000000000000000000000000000000000000000000000000000000000",
@@ -259,8 +260,20 @@ export const X25519_LOW_ORDER: string[] = [
   "0000000000000000000000000000000000000000000000000000000000000080",
   "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 ];
+/** The other five high-bit encodings of the same seven low-order u values. */
+export const X25519_LOW_ORDER_HIGH_BIT: string[] = [
+  "0100000000000000000000000000000000000000000000000000000000000080",
+  "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880",
+  "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7",
+  "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+];
+/** u = p + 2, a non-canonical encoding of u = 2: a valid point (a control). */
+const X25519_P_PLUS_2 = "efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f";
 /** Ed25519's group order L, for a non-canonical `s` (`s + L`). */
 const ED_L = (1n << 252n) + 27742317777372353535851937790883648493n;
+/** Ed25519's field prime p = 2^255 − 19; y = p + k (k < 19) is a non-canonical encoding of y = k. */
+const ED_P = (1n << 255n) - 19n;
 const leHexToBigInt = (h: string): bigint =>
   BigInt("0x" + (h.match(/../g) ?? []).reverse().join(""));
 const bigIntToLeHex = (v: bigint, bytes: number): string => {
@@ -269,6 +282,24 @@ const bigIntToLeHex = (v: bigint, bytes: number): string => {
     out += ((v >> BigInt(8 * i)) & 0xffn).toString(16).padStart(2, "0");
   return out;
 };
+/** The 32-byte Ed25519 encoding of `y` (< 2^255) with the sign bit set or clear. */
+const edEncoding = (y: bigint, sign: boolean): string =>
+  bigIntToLeHex(sign ? y | (1n << 255n) : y, 32);
+/**
+ * Non-canonical `y = p + k` encodings that dalek's `CompressedEdwardsY::decompress`
+ * still decodes (it reduces y first; the reduced point has a square root), and the
+ * ones it rejects. Executed against noble's `Point.fromBytes(enc, true)`, which
+ * applies the same rule; CRYPTO-04's boundary test pins both lists.
+ */
+export const ED_NONCANONICAL_DECODABLE_K: number[] = [0, 1, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18];
+export const ED_NONCANONICAL_UNDECODABLE_K: number[] = [2, 7, 8, 11, 12, 13, 17];
+/** secp256k1's p + 1, an x coordinate outside the field on both sides. */
+const SECP_P_PLUS_1 = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30";
+const SECP_N_HEX = SECP_N.toString(16).padStart(64, "0");
+/** The secp256k1 generator G (y even) and p − Gy (odd). */
+const SECP_GX = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+const SECP_GY = "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8";
+const SECP_NEG_GY = "b7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777";
 
 const firstSigned = (scheme: "ecdsa" | "schnorr" | "ed25519") => {
   const t = SIGNED.find((x) => x.scheme === scheme);
@@ -312,14 +343,92 @@ function* verify(): Generator<Recipe> {
   yield verifyOf("schnorr", sc.pub, FF64, sc.msg);
   yield verifyOf("ed25519", FF32, ed.sig, ed.msg);
   yield verifyOf("ed25519", ed.pub, FF64, ed.msg);
+  // Signatures with r or s in {0, n} and a key whose x exceeds the field: `false` on both
+  // sides (the reference's `let Ok(..) = … else { return false; }`; libsecp256k1 parses
+  // r = 0 and s = 0 and rejects r, s >= n; the verification then fails).
+  const ONE32 = "00".repeat(31) + "01";
+  const ZERO32 = "00".repeat(32);
+  yield verifyOf("ecdsa", ec.pub, ZERO32 + ONE32, ec.msg);
+  yield verifyOf("ecdsa", ec.pub, SECP_N_HEX + ONE32, ec.msg);
+  yield verifyOf("ecdsa", ec.pub, ONE32 + SECP_N_HEX, ec.msg);
+  yield verifyOf("ecdsa", ec.pub, ONE32 + ZERO32, ec.msg);
+  yield verifyOf("ecdsa", "02" + SECP_P_PLUS_1, ec.sig, ec.msg);
+  // Ed25519 public keys dalek cannot decode (y = p + k for these k, both sign bits), with a
+  // signature that verifies under the fixture's real key: `false` on both sides.
+  for (const k of ED_NONCANONICAL_UNDECODABLE_K)
+    for (const sign of [false, true])
+      yield verifyOf("ed25519", edEncoding(ED_P + BigInt(k), sign), ed.sig, ed.msg);
+  // Non-canonical A encodings dalek decodes (to a point other than the signer's) and the
+  // two x = 0 sign-bit encodings; TypeScript decodes canonically. Both sides: `false`.
+  for (const k of ED_NONCANONICAL_DECODABLE_K)
+    for (const sign of [false, true])
+      yield verifyOf("ed25519", edEncoding(ED_P + BigInt(k), sign), ed.sig, ed.msg);
+  yield verifyOf("ed25519", edEncoding(1n, true), ed.sig, ed.msg);
+  yield verifyOf("ed25519", edEncoding(ED_P - 1n, true), ed.sig, ed.msg);
+  // The same encodings as R (with the fixture's real s): dalek compares the canonical
+  // re-encoding of [s]B − [k]A with the bytes of R, so a non-canonical R never verifies.
+  for (let k = 0; k <= 18; k++)
+    for (const sign of [false, true])
+      yield verifyOf(
+        "ed25519",
+        ed.pub,
+        edEncoding(ED_P + BigInt(k), sign) + ed.sig.slice(64),
+        ed.msg,
+      );
+  yield verifyOf("ed25519", ed.pub, edEncoding(1n, true) + ed.sig.slice(64), ed.msg);
+  yield verifyOf("ed25519", ed.pub, edEncoding(ED_P - 1n, true) + ed.sig.slice(64), ed.msg);
+}
+/**
+ * Success paths the corpus never pinned against the reference: point decompression and
+ * compression with values, and AEAD decryption of literal sealed buffers (key 00…1f,
+ * nonce 00…0b). Every input is a literal, so a regression on either side is a MISMATCH.
+ */
+function* roundTrips(): Generator<Recipe> {
+  const GX = SECP_GX;
+  const GY = SECP_GY;
+  const X1 = "00".repeat(31) + "01";
+  const Y_OF_X1 = "4218f20ae6c646b363db68605822fb14264ca8d2587fdd6fbc750d587e76a7ee";
+  yield { k: "ecdsaDecompress", pub: hx("02" + GX) };
+  yield { k: "ecdsaDecompress", pub: hx("03" + GX) };
+  yield { k: "ecdsaDecompress", pub: hx("02" + X1) };
+  yield { k: "ecdsaDecompress", pub: hx("02" + SECP_P_PLUS_1) };
+  yield { k: "ecdsaCompress", pub: hx("04" + GX + GY) };
+  yield { k: "ecdsaCompress", pub: hx("04" + X1 + Y_OF_X1) };
+  yield { k: "ecdsaCompress", pub: hx("04" + SECP_P_PLUS_1 + Y_OF_X1) };
+  const key = cyc(32);
+  const nonce = cyc(12);
+  const sealedWithAad = hx("e19e646c4637d22fc5ef5b23ea7a2c99eb2a042ad2377566f86b65");
+  const sealed = hx("e19e646c4637d22fc5ef5b18f74a8dd13d3bbce0be3ebb508fb959");
+  const sealedEmpty = hx("295a498b8841a1c5f55d4d606f731159");
+  yield { k: "aeadDecrypt", ct: sealedWithAad, key, nonce, aad: txt("ad") };
+  yield { k: "aeadDecrypt", ct: sealedWithAad, key, nonce };
+  yield { k: "aeadDecrypt", ct: sealed, key, nonce };
+  yield { k: "aeadDecrypt", ct: sealedEmpty, key, nonce };
+  yield { k: "aeadDecrypt", ct: sealedEmpty, key, nonce, aad: cyc(0) };
 }
 function* faults(): Generator<Recipe> {
   const zero = hx("00".repeat(32));
   const n = hx("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
   const pw = txt("pw");
   const salt = cyc(16, 0x50);
-  // Low-order X25519 peers.
+  // Low-order X25519 peers: every encoding for two private keys, and the p + 2 control
+  // (a valid point) for each, so the rejected set is pinned exactly on both sides.
   for (const pub of X25519_LOW_ORDER) yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx(pub) };
+  for (const pub of X25519_LOW_ORDER_HIGH_BIT)
+    yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx(pub) };
+  for (const pub of [...X25519_LOW_ORDER, ...X25519_LOW_ORDER_HIGH_BIT])
+    yield { k: "x25519Shared", priv: cyc(32, 0x99), pub: hx(pub) };
+  yield { k: "x25519Shared", priv: cyc(32, 1), pub: hx(X25519_P_PLUS_2) };
+  yield { k: "x25519Shared", priv: cyc(32, 0x99), pub: hx(X25519_P_PLUS_2) };
+  // libsecp256k1's hybrid uncompressed encodings: 06 states an even y, 07 an odd y.
+  yield { k: "ecdsaCompress", pub: hx("06" + SECP_GX + SECP_GY) };
+  yield { k: "ecdsaCompress", pub: hx("07" + SECP_GX + SECP_GY) };
+  yield { k: "ecdsaCompress", pub: hx("07" + SECP_GX + SECP_NEG_GY) };
+  yield { k: "ecdsaCompress", pub: hx("06" + SECP_GX + SECP_NEG_GY) };
+  yield { k: "ecdsaCompress", pub: hx("05" + SECP_GX + SECP_GY) };
+  yield { k: "ecdsaCompress", pub: hx("06" + SECP_P_PLUS_1 + SECP_GY) };
+  // Above noble's former default memory ceiling (~1 GiB): the reference has none.
+  yield { k: "scrypt", pw, salt, len: 32, n: 17, r: 64, p: 1 };
   // Scalar, point, and KDF domain checks.
   yield { k: "ecdsaPub", priv: zero };
   yield { k: "schnorrPub", priv: zero };
@@ -356,12 +465,31 @@ function* faults(): Generator<Recipe> {
   // The parameterised path rejects len 8 (10..=64); the default path accepts it — on both sides.
   yield { k: "scrypt", pw, salt, len: 8, n: 4, r: 8, p: 1 };
   yield { k: "scrypt", pw, salt, len: 8 };
-  // A6: the JS-only keystream on an honest input (js-only in the reference harness)
+  // The JS-only keystream on an honest input (js-only J1 in the reference harness).
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(64) };
   yield { k: "chacha20", key: cyc(32, 0x10), nonce: cyc(12, 0xa0), d: cyc(64), counter: 1 };
+  // Width probes: numbers the reference's `u8`/`u32` parameters cannot receive.
+  // `InvalidParameter` here; js-only (J4) in the harness, never a truncated value.
+  yield { k: "scrypt", pw, salt, len: 32, n: 256, r: 8, p: 1 };
+  yield { k: "pbkdf2Sha256", pw, salt, iter: 4294967296, len: 32 };
+  yield { k: "scrypt", pw, salt, len: 32, n: 4, r: 4294967297, p: 1 };
 }
-/** Recipes the frozen baseline bundle cannot run (no `chacha20`). */
-export const noBaseline = (r: Recipe): boolean => r.k === "chacha20";
+/** A recipe whose number exceeds the reference's width (the harness's J4 class). */
+const isWidthProbe = (r: Recipe): boolean =>
+  (r.k === "scrypt" && ((r.n ?? 0) > 0xff || (r.r ?? 0) > 0xffffffff || (r.p ?? 0) > 0xffffffff)) ||
+  ((r.k === "pbkdf2Sha256" || r.k === "pbkdf2Sha512") && r.iter > 0xffffffff);
+/** Recipes the frozen baseline bundle cannot run (no `chacha20`) or is not asked to (width probes). */
+export const noBaseline = (r: Recipe): boolean => r.k === "chacha20" || isWidthProbe(r);
+/**
+ * Vectors too heavy for the golden file (`tests/vectors/heavy.json`): replayed
+ * in CI by the Rust harness, by Bun (`scripts/check-heavy-vectors.ts`) and by
+ * Node (`CRYPTO_HEAVY=1`, `tests/heavy-vectors.test.ts`).
+ */
+export function* heavyRecipes(): Generator<Recipe> {
+  // 128·9·2^22 bytes of V (4.8 GiB): more than one typed array on JavaScriptCore,
+  // so the paged scrypt core; the reference derives it in about 6 s.
+  yield { k: "scrypt", pw: txt("pw"), salt: cyc(16, 0x50), len: 32, n: 22, r: 9, p: 1 };
+}
 
 export const categories: Record<string, () => Generator<Recipe>> = {
   hashes,
@@ -370,6 +498,7 @@ export const categories: Record<string, () => Generator<Recipe>> = {
   keys,
   verify,
   faults,
+  roundTrips,
 };
 export function* allRecipes(): Generator<Recipe> {
   for (const g of Object.values(categories)) yield* g();
@@ -384,4 +513,5 @@ export function* goldenRecipes(): Generator<Recipe> {
   yield* keys();
   yield* verify();
   yield* faults();
+  yield* roundTrips();
 }

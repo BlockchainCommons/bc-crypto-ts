@@ -1,11 +1,90 @@
 # Changelog
 
+## Unreleased
+
+Closes every divergence from the reference that a TypeScript design can
+remove. The reference is the `bc-rust/bc-crypto-rust` working tree (commit
+`4f2b791`, tag 0.14.0, plus its input-validation edits), which the Rust harness
+now patches in; against it there is no exception list. Requires
+`@blockchaincommons/rand` ≥ 1.0.0-beta.3.
+
+### Changed (breaking)
+
+- **Every argument is type-checked first.** A byte argument that is not a
+  `Uint8Array` (a string, a plain array, an `ArrayBuffer`), an options
+  argument that is not an object, or a `littleEndian` that is not a boolean
+  throws `CryptoError` `InvalidParameter` naming the argument, before any
+  length, domain or backend check. Before, such values leaked engine
+  `TypeError`s, were silently accepted (`crc32([1, 2, 3])` returned a
+  checksum, `ed25519.verify(pk, sig, "msg")` returned `false`) or blamed
+  another argument (`ecdsa.sign(key, "msg")` reported the private key). A
+  `Buffer` and a `Uint8Array` from another realm are accepted. `memzero` and
+  `memzeroAll` require numeric typed arrays.
+- **A low-order X25519 peer is `NonContributoryKey`.** `x25519.sharedKey`
+  throws the new code with the reference's message, `"X25519 peer key
+  produces an all-zero shared secret"` (its `try_x25519_shared_key` returns
+  `Err(NonContributoryKey)`), instead of `InvalidData` "low-order point".
+  `CryptoErrorCode` and `CryptoErrorDetails` gain the member.
+- **scrypt has no default memory ceiling.** `maxmem` is an opt-in ceiling;
+  by default the parameters decide, as in the reference. logN 17, r 64
+  (1.07 GiB) now derives (`88d8c775…86f3`), where noble's ~1 GiB default
+  rejected it.
+
+### Added
+
+- **A paged scrypt core for oversize parameter sets.** JavaScriptCore (Bun,
+  Safari) holds at most 2^32 bytes in one typed array; when `128·r·N` or
+  `128·r·p` exceeds 2^31 bytes, `scrypt` derives with an in-package RFC 7914
+  core that keeps `V` and `B` in pages, byte-identical to noble and to the
+  reference (logN 22, r 9 gives `1fc13793…d167` on Bun in about 6 s at
+  4.8 GiB). Smaller sets still go to noble.
+- **Hybrid uncompressed keys.** `ecdsa.compressPublicKey` accepts
+  libsecp256k1's `06`/`07` prefixes when the low bit matches the parity of
+  y, as the reference does; a mismatch is `InvalidData`.
+- **PBKDF2 `dkLen` up to (2^32 − 1)·hLen** (RFC 8018 §5.2; 32 or 64), where
+  the port stopped at 2^32 − 1. `iterations` 0 stays `InvalidParameter` at
+  every length, the typed form of the reference's `assert!(iterations > 0)`.
+- `chacha20` returns `Uint8Array<ArrayBuffer>`.
+
+### Validation
+
+- The harness is patched to the reference tree, has no exception list, and
+  parses every argument with the Rust width before the call: a wrong-length
+  fixed argument, sealed data under 16 bytes, a number outside `u8`, `u32`
+  or `usize`, and raw ChaCha20 are js-only, never matches or mismatches.
+  The golden file grew from 679 to 807 vectors: point (de)compression and
+  AEAD decryption success paths, 66 non-canonical Ed25519 A and R rows, 19
+  undecodable-key and r/s ∈ {0, n} verify rows, 21 low-order X25519 rows
+  carrying the error value, 6 hybrid keys, the logN 17 r 64 row and 3 width
+  probes. `--full` replays the whole corpus (1195) and `heavy.json` the
+  logN 22, r 9 vector; CI runs all three, plus the heavy vector on Bun and
+  Node. Results: `807 vectors - 793 match, 14 js-only, 0 MISMATCH`;
+  `1195 - 1180, 15, 0`; `1 - 1, 0, 0`.
+- Tests: an argument-type property over every exported function, the
+  Ed25519 decoder boundary (dalek decodes 26 of the 40 non-canonical
+  encodings, the port none; `verify` is `false` for all 40 on both sides),
+  a verify-never-throws property, the Ed25519 packed and fallback generator
+  paths, malformed generators propagating rand's `InvalidGenerator`
+  unwrapped, backend spies for the PBKDF2 bound and the scrypt ceiling, and
+  the paged core against noble under one-block, three-block and default
+  pages plus the RFC 7914 vectors.
+
+### Corrections to the 1.0.0-beta.2 entry
+
+The four "behavioral differences" that entry kept were differences from the
+released `bc-crypto` 0.14.0 crate, not from the reference tree, which already
+returned `false` for an unparseable verify input, rejected a low-order X25519
+peer and asserted positive KDF costs. Against the reference, malformed verify
+inputs match (`false` on both sides), scrypt logN 0 and PBKDF2 iterations 0
+are the usual panic → `InvalidParameter` mapping, and the low-order X25519
+peer is matched by code and message as of this release.
+
 ## 1.0.0-beta.2
 
-Pending release. Fixes Ed25519 verification and adds reference parameter
-validation. Four behavioral differences remain against published Rust
-`bc-crypto` 0.14.0; see [RUST_DIVERGENCES.md](./RUST_DIVERGENCES.md).
-Ordinary signing and derivation outputs are unchanged.
+Fixes Ed25519 verification and adds reference parameter validation. Four
+behavioral differences remained against the published Rust `bc-crypto`
+0.14.0 crate (see the corrections above). Ordinary signing and derivation
+outputs are unchanged.
 
 ### Fixed
 

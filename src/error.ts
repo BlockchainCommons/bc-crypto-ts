@@ -3,10 +3,15 @@
  *
  * @module error
  */
+import { isBytes } from "@noble/hashes/utils.js";
 
 /** Machine-readable discriminant for a {@link CryptoError}. */
 export type CryptoErrorCode =
-  "InvalidSize" | "InvalidData" | "InvalidParameter" | "AuthenticationFailed";
+  | "InvalidSize"
+  | "InvalidData"
+  | "InvalidParameter"
+  | "NonContributoryKey"
+  | "AuthenticationFailed";
 
 /**
  * The structured payload of a {@link CryptoError}, discriminated by `code`:
@@ -26,13 +31,27 @@ export type CryptoErrorDetails =
   | {
       /** A key, point or signature of the right length that is not valid. */
       readonly code: "InvalidData";
-      /** The argument, e.g. `"X25519 public key"`. */
+      /** The argument, e.g. `"ECDSA compressed public key"`. */
       readonly what: string;
     }
   | {
-      /** A KDF or counter argument outside its domain. */
+      /**
+       * An argument outside its domain: a number that is not an integer of
+       * the Rust width, an options object that is not an object, a boolean
+       * option that is not a boolean, or a byte argument that is not a
+       * `Uint8Array`. Also a KDF parameter set the backend rejects.
+       */
       readonly code: "InvalidParameter";
-      /** The argument, e.g. `"scrypt logN"`. */
+      /** The argument, e.g. `"scrypt logN"` or `"ECDSA message"`. */
+      readonly what: string;
+    }
+  | {
+      /**
+       * `x25519.sharedKey` was given a low-order peer key, so the shared
+       * secret would be all zero (the reference's `Error::NonContributoryKey`).
+       */
+      readonly code: "NonContributoryKey";
+      /** The argument: `"X25519 public key"`. */
       readonly what: string;
     }
   | {
@@ -43,12 +62,17 @@ export type CryptoErrorDetails =
 /**
  * Thrown for wrong-length keys, nonces, signatures and public keys
  * (`InvalidSize`), a key, point or signature of the right length that is not
- * valid (`InvalidData`), a KDF or counter argument outside its domain
- * (`InvalidParameter`), and AEAD tag mismatch (`AuthenticationFailed`).
+ * valid (`InvalidData`), an argument outside its domain, including a value
+ * of the wrong type (`InvalidParameter`), a low-order X25519 peer key
+ * (`NonContributoryKey`), and AEAD tag mismatch (`AuthenticationFailed`).
  *
- * Every failure raised by this package is a `CryptoError`; when a backend
- * error is what was caught, it is the `cause`. Instances come from the static
- * factories only.
+ * Every failure of an argument or of a primitive is a `CryptoError`; when a
+ * backend error is what was caught, it is the `cause`. Two things propagate
+ * unwrapped, because they are not this package's: a generator's own error
+ * (`RandError` from `@blockchaincommons/rand`, including `InvalidGenerator`
+ * for a generator that lacks a method the draw calls), and an allocation
+ * failure outside the KDFs (`RangeError` from the engine). Instances come
+ * from the static factories only.
  *
  * @example
  * ```ts
@@ -100,9 +124,22 @@ export class CryptoError extends Error {
     return new CryptoError(message, { code: "InvalidData", what }, cause);
   }
 
-  /** `what` (a KDF or counter argument) is outside its domain. */
+  /** `what` (a number, an options object or a byte argument) is outside its domain. */
   static invalidParameter(what: string, message: string, cause?: unknown): CryptoError {
     return new CryptoError(message, { code: "InvalidParameter", what }, cause);
+  }
+
+  /**
+   * The X25519 peer key is a low-order point, so the shared secret would be
+   * all zero. The message is the reference's `Error::NonContributoryKey`
+   * Display text.
+   */
+  static nonContributoryKey(cause?: unknown): CryptoError {
+    return new CryptoError(
+      "X25519 peer key produces an all-zero shared secret",
+      { code: "NonContributoryKey", what: "X25519 public key" },
+      cause,
+    );
   }
 
   /** AEAD authentication failed (wrong key, nonce, aad, or tampered data). */
@@ -112,7 +149,70 @@ export class CryptoError extends Error {
   }
 }
 
-/** @internal Length precondition shared by the key and signature functions. */
-export function requireLength(what: string, bytes: Uint8Array, expected: number): void {
+/** @internal A short description of a rejected value for `got …` clauses. */
+export function describeValue(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return `Array(${value.length})`;
+  if (typeof value !== "object") return typeof value;
+  const proto = Object.getPrototypeOf(value) as { constructor?: { name?: unknown } } | null;
+  const name = proto?.constructor?.name;
+  return typeof name === "string" && name !== "" ? name : "object";
+}
+
+/**
+ * @internal `value` must be a `Uint8Array` (from any realm; a `Buffer` is
+ * one). Every byte argument is checked this way before any other precondition,
+ * so a string, array or `ArrayBuffer` is `InvalidParameter` naming `what`.
+ */
+export function requireBytes(what: string, value: unknown): asserts value is Uint8Array {
+  if (!isBytes(value)) {
+    throw CryptoError.invalidParameter(
+      what,
+      `${what} must be a Uint8Array, got ${describeValue(value)}`,
+    );
+  }
+}
+
+/**
+ * @internal An options argument must be an object. An optional one may be
+ * `undefined`; a required one may not.
+ */
+export function requireOptions(
+  what: string,
+  value: unknown,
+  optional: boolean,
+): asserts value is object | undefined {
+  if (value === undefined && optional) return;
+  if (typeof value !== "object" || value === null) {
+    throw CryptoError.invalidParameter(
+      what,
+      `${what} must be an object, got ${describeValue(value)}`,
+    );
+  }
+}
+
+/** @internal A boolean option: `undefined` (absent) or a boolean. Returns it. */
+export function expectBool(what: string, value: unknown): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") {
+    throw CryptoError.invalidParameter(
+      what,
+      `${what} must be a boolean, got ${describeValue(value)}`,
+    );
+  }
+  return value;
+}
+
+/**
+ * @internal Length precondition shared by the key and signature functions.
+ * The type check comes first, so a non-`Uint8Array` is `InvalidParameter`
+ * and a wrong length is `InvalidSize`.
+ */
+export function requireLength(
+  what: string,
+  bytes: unknown,
+  expected: number,
+): asserts bytes is Uint8Array {
+  requireBytes(what, bytes);
   if (bytes.length !== expected) throw CryptoError.invalidSize(what, expected, bytes.length);
 }
