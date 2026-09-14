@@ -119,7 +119,13 @@ export const ecdsa: Ecdsa = {
         plain[0] = 0x04;
         const point = secp256k1.Point.fromBytes(plain);
         if ((point.toAffine().y & 1n) !== BigInt(head & 1)) {
-          throw new Error("hybrid prefix does not match the parity of y");
+          // A CryptoError passes through `guard`; the point is on the curve,
+          // so `invalidPoint`'s message would be wrong here. The reference
+          // does not distinguish the two: both are `InvalidPublicKey`.
+          throw CryptoError.invalidData(
+            "ECDSA uncompressed public key",
+            "ECDSA uncompressed public key has a hybrid prefix that does not match the parity of y",
+          );
         }
         return point.toBytes(true);
       }

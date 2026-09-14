@@ -1077,6 +1077,16 @@ describe("ECDSA hybrid uncompressed keys (libsecp256k1's 06/07 prefixes)", () =>
       expect(CryptoError.isCryptoError(err) && err.code).toBe("InvalidData");
     }
   });
+  test("a contradicting prefix is reported as such, not as an off-curve point", () => {
+    for (const bad of ["07" + GX + GY, "06" + GX + NEG_GY]) {
+      expect(() => ecdsa.compressPublicKey(hex(bad))).toThrow(
+        "ECDSA uncompressed public key has a hybrid prefix that does not match the parity of y",
+      );
+    }
+    expect(() => ecdsa.compressPublicKey(hex("05" + GX + GY))).toThrow(
+      "ECDSA uncompressed public key is not a point on the curve",
+    );
+  });
 });
 
 describe("ChaCha20 keystream", () => {

@@ -1,12 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-beta.3 - 2026-09-14
 
-Closes every divergence from the reference that a TypeScript design can
-remove. The reference is the `bc-rust/bc-crypto-rust` working tree (commit
-`4f2b791`, tag 0.14.0, plus its input-validation edits), which the Rust harness
-now patches in; against it there is no exception list. Requires
-`@blockchaincommons/rand` ≥ 1.0.0-beta.3.
+Closes the divergence from the reference listed below. The reference is the `bc-crypto-rust` (tag 0.14.0), 
+which the Rust harness now patches in; against it there is no exception list.
 
 ### Changed (breaking)
 
