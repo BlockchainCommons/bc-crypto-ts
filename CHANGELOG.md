@@ -106,13 +106,6 @@ Fixes Ed25519 verification and adds reference parameter validation.
   parameters above the default - for example to unlock a key locked in Rust
   with `logN 21, r 8` - passes a larger value. Backend and runtime limits still apply.
 
-### Validation
-
-- Added 16 Ed25519 torsion fixtures and PBKDF2 zero-iteration fixtures for
-  both hashes with empty and nonempty output. The Rust 0.14.0 comparison
-  reports 649 matches and 30 expected-divergence/JS-only cases, with no
-  unexpected mismatches.
-
-## 1.0.0-beta.1 - 2026-09-12
+## 1.0.0-beta.1 - 2026-09-09
 
 Initial beta implementation.
