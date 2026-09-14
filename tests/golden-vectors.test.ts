@@ -19,7 +19,10 @@ describe("golden vectors (frozen)", () => {
     expect(vectors.length).toBeGreaterThanOrEqual(300);
   });
   vectors.forEach((v, i) => {
-    it(`#${i} ${v.recipe.k}`, () => {
+    // scrypt rows derive for real: the logN 17, r 64 row (1.07 GiB) takes
+    // over a second here and several on a CI runner, past vitest's 5 s default.
+    const options = v.recipe.k === "scrypt" ? { timeout: 120_000 } : {};
+    it(`#${i} ${v.recipe.k}`, options, () => {
       expect(materialize(api, v.recipe)).toBe(v.expect);
     });
   });
