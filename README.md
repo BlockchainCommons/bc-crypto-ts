@@ -65,6 +65,7 @@ Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons
 
 ### Version History
 
+- **1.0.0-beta.5 (October 19, 2026)** - Installs with npm on a host without Bun: the TypeScript 6 pin for the lint tools runs from `prepare`, not `postinstall` ([bc-components-ts#11](https://github.com/BlockchainCommons/bc-components-ts/issues/11)).
 - **1.0.0-beta.3 (September 14, 2026)** - Every argument is type-checked before anything else (a non-`Uint8Array` byte argument is `InvalidParameter`); a low-order X25519 peer derives the reference's key; `verify` throws `InvalidData`; PBKDF2 `iterations: 0` and scrypt `logN: 0` derive; hybrid `06`/`07` uncompressed keys compress; PBKDF2 accepts `dkLen` up to (2^32 − 1)·hLen.
 - **1.0.0-beta.2 (September 12, 2026)** - Ed25519 uses the Rust reference's uncofactored verification equation; ChaCha20 counter-overflow reports `InvalidParameter`; scrypt validates its backend limits. scrypt mirrors the reference's parameter rules (`logN < 16·r`, `r·p < 2^30`, the parameterised path's `10..=64` output length) and gains `maxmem`; PBKDF2 accepts `dkLen: 0` with positive iterations; argon2id keeps only the reference's fixed costs.
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
